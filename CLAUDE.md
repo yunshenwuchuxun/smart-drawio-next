@@ -4,213 +4,168 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Smart Drawio Next is a Next.js application that generates editable Draw.io diagrams from natural language descriptions or reference images using LLM APIs. Users can describe what they want (e.g., "a Transformer architecture diagram") and the system streams back either JSON elements or Draw.io XML that can be visualized and edited.
+Smart Drawio Next is a Next.js application that generates editable Draw.io diagrams from natural language descriptions or reference images using LLM APIs. Users describe what they want (e.g., "a Transformer architecture diagram") and the system streams back Draw.io XML that renders in an embedded draw.io iframe.
 
 ## Technology Stack
 
 - **Framework**: Next.js 16 with App Router + React 19
-- **UI**: Tailwind CSS v4 (experimental with `@theme inline` syntax)
-- **Canvas**: Embedded draw.io iframe and Excalidraw
-- **Editor**: Monaco Editor for code editing
+- **UI**: Tailwind CSS v4 with CSS custom properties for light/dark theming (`globals.css`)
+- **Canvas**: Embedded draw.io iframe (dynamically imported, SSR-disabled)
+- **Editor**: Monaco Editor (`@monaco-editor/react`)
 - **LLM Integration**: OpenAI/Anthropic-compatible APIs with SSE streaming
-- **State**: Client-side localStorage for configs, history, and passwords
+- **Validation**: Zod (`lib/schemas.js`)
+- **State**: Client-side localStorage via `lib/storage.js` wrapper
+- **Testing**: Vitest (unit) + Playwright (E2E)
 
 ## Development Commands
 
 ```bash
-# Install dependencies (pnpm recommended)
-pnpm install
-
-# Start development server with webpack
-pnpm dev
-
-# Production build
-pnpm build
-
-# Start production server (requires build first)
-pnpm start
-
-# Run ESLint
-pnpm lint
+pnpm install                    # Install dependencies
+pnpm dev                        # Start dev server (webpack mode)
+pnpm build                      # Production build
+pnpm start                      # Start production server
+pnpm lint                       # Run ESLint
+pnpm test                       # Run unit tests (vitest, watch mode)
+pnpm test -- run                # Run unit tests once (no watch)
+pnpm test -- tests/lib/theme-engine.test.js   # Run a single test file
+pnpm test:coverage              # Run tests with v8 coverage
+pnpm test:ui                    # Run tests with Vitest UI
+pnpm test:e2e                   # Run E2E tests (Playwright, needs dev server)
 ```
 
-**Requirements**: Node.js ≥ 18.18
+**Requirements**: Node.js >= 18.18, pnpm
 
-## Architecture & Key Concepts
+## Architecture
 
-### Application Structure
-
-The app is a **single-page client-driven application** with state orchestrated entirely in `app/page.js`:
-
-- **`app/page.js`**: Main orchestrator containing all state management (generation status, config, modals, panels, errors). All UI updates flow through this component.
-- **`app/api/`**: Server-side API routes that stream LLM responses as Server-Sent Events (SSE)
-  - `generate/`: Main generation endpoint
-  - `models/`: List available models
-  - `configs/`: Test configurations
-  - `auth/validate`: Validate access passwords
-
-### Critical Flow Patterns
-
-#### 1. **LLM Generation Flow**
+### Core Generation Flow
 
 ```
 User Input (Chat.jsx)
-  → app/page.js setState
-    → POST /api/generate with streaming
-      → lib/llm-client.js (OpenAI/Anthropic adapter)
-        → Stream chunks back as SSE
-          → app/page.js accumulates response
-            → Update CodeEditor + DrawioCanvas
+  -> app/page.js orchestrates state
+    -> useGenerationWorkflow hook
+      -> POST /api/generate (SSE streaming)
+        -> lib/generate-route-utils.js (validation, message building)
+          -> lib/llm-client.js (OpenAI/Anthropic adapter)
+            -> Stream chunks back via SSE
+              -> lib/drawio-code-utils.js (parse, sanitize, post-process)
+                -> lib/theme-postprocess.js (auto-apply tricks per theme)
+                  -> CodeEditor + DrawioCanvas update
 ```
 
-**Key Files**:
-- `lib/llm-client.js`: Handles OpenAI/Anthropic API calls with streaming support
-- `lib/prompts.js`: System prompts and prompt templates
-- `lib/constants.js`: Chart type definitions and constants
-- `app/api/generate/route.js`: SSE streaming endpoint
+### State Management
 
-#### 2. **Configuration Management**
+All application state lives in `app/page.js` and flows down as props. No global state library. Complex logic is extracted into three custom hooks:
 
-Two modes exist:
-- **Client-side configs** (default): Multiple configs stored in `localStorage` with key `smart-excalidraw-configs`
-- **Server-side config** (optional): Enabled via access password in `.env`, accessed when `x-access-password` header matches `ACCESS_PASSWORD`
+| Hook | Location | Purpose |
+|------|----------|---------|
+| `useGenerationWorkflow` | `lib/hooks/use-generation-workflow.js` | Generation lifecycle: streaming, continuation, optimization, error handling, blueprint phases |
+| `useToolsPanel` | `lib/hooks/use-tools-panel.js` | Style preset toggles, drawing tricks, text tools, style packs |
+| `useXmlHistory` | `lib/hooks/use-xml-history.js` | Undo/redo stack for XML snapshots (max 20 entries) |
 
-**Key Files**:
-- `lib/config-manager.js`: Modern config CRUD and localStorage management
-- `lib/config.js`: Legacy config adapter (migration layer)
-- `components/ConfigManager.jsx`: UI for managing multiple configs
+Pattern for adding new state: add to `app/page.js`, pass handlers/state as props, use `useEffect` for localStorage sync.
 
-#### 3. **Data Format & Rendering**
+### Tools System
 
-The system supports two output formats:
-1. **JSON Elements**: Array of shape objects that get converted to Draw.io components
-2. **Draw.io XML**: Direct `mxGraphModel` XML that can be loaded into draw.io
+The tools system (`lib/tool-registry.js`) aggregates four categories of XML post-processing tools, all following the same pattern: take XML in, return `{ xml, error?, stats? }`.
 
-**Key Files**:
-- `components/DrawioCanvas.jsx`: Manages draw.io iframe communication via `postMessage`
-- `components/CodeEditor.jsx`: Monaco editor for viewing/editing generated code
-- `lib/optimizeArrows.js`: Arrow anchor optimization logic
+| Category | Module | What it does |
+|----------|--------|-------------|
+| Style Presets | `lib/style-presets.js` | Toggle-based effects (shadow, gradient, rounded, glass) |
+| Text Style Tools | `lib/text-style-tools.js` | Font/text transformations |
+| Style Packs | `lib/style-packs.js` | Multi-property style bundles |
+| Drawing Tricks | `lib/drawing-tricks.js` | Structural transforms (grid snap, smart arrows, orthogonal routing, label backgrounds) |
 
-### Storage Namespaces
+### Theme System
 
-All localStorage keys use the prefix `smart-excalidraw-*`:
-- `smart-excalidraw-configs`: Array of all saved configs
-- `smart-excalidraw-active-config`: ID of currently active config
-- `smart-excalidraw-history`: Last 20 generations
-- `smart-excalidraw-use-password`: Boolean flag for access password mode
-- `smart-excalidraw-password`: Stored access password
+Two separate theme systems:
 
-### Important Patterns
+1. **UI Theme** (light/dark/system): CSS custom properties in `globals.css`, toggled via `data-theme` attribute. Managed by `lib/theme-mode.js`.
+2. **Diagram Theme** (10 color palettes): `lib/themes/` directory. Each theme defines a `colorPalette` with semantic tokens. `lib/theme-engine.js` handles XML style parsing (`parseStyle`/`stringifyStyle`) and color remapping. `lib/theme-postprocess.js` auto-applies certain drawing tricks per theme (e.g., research theme gets orthogonal routing + smart arrows).
 
-#### Client-Side State Management
-All application state lives in `app/page.js` and is passed down as props. There's no global state management library. When adding new features, follow this pattern:
-- Add state to `app/page.js`
-- Pass handlers and state as props to child components
-- Use `useEffect` in `app/page.js` for localStorage sync
+### Storage
 
-#### Dynamic Imports for SSR
-Draw.io and Excalidraw canvases are dynamically imported with `ssr: false` to avoid server-side rendering issues:
-```javascript
-const DrawioCanvas = dynamic(() => import('@/components/DrawioCanvas'), {
-  ssr: false,
-});
-```
+Uses `lib/storage.js` wrapper with in-memory Map fallback for SSR/privacy mode. Keys prefixed with `smart-drawio-*`:
 
-#### API Route Streaming Pattern
-API routes return `ReadableStream` with SSE format. Each chunk is prefixed with `data: ` and terminated with `\n\n`:
-```javascript
-const stream = new ReadableStream({
-  async start(controller) {
-    controller.enqueue(`data: ${JSON.stringify({ content: chunk })}\n\n`);
-  }
-});
-```
+| Key | Purpose |
+|-----|---------|
+| `smart-drawio-configs` | Array of LLM configs |
+| `smart-drawio-active-config` | Current config ID |
+| `smart-drawio-history` | Last 20 generations |
+| `smart-drawio-diagram-theme` | Current diagram theme |
+| `smart-drawio-style-presets` | Active style presets |
+| `smart-drawio-theme-mode` | UI theme (light/dark/system) |
+| `smart-drawio-active-panel` | Currently open sidebar panel |
 
-#### Error Handling
-- API errors are caught and stored in `apiError` state
-- JSON parsing errors are caught and stored in `jsonError` state with line numbers
-- Errors are displayed via the `Notification` component
+Legacy keys (`smart-excalidraw-*`) are auto-migrated on first load via `ensureMigration()`.
 
-## Environment Variables
+### API Routes
 
-Optional server-side LLM configuration (see `.env.example`):
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/generate` | POST | Main generation endpoint (SSE streaming), rate-limited |
+| `/api/models` | GET | List available models from configured provider |
+| `/api/configs` | POST | Test LLM connection |
 
-```bash
-ACCESS_PASSWORD=your-secure-password
-SERVER_LLM_TYPE=openai         # or anthropic
-SERVER_LLM_BASE_URL=https://api.openai.com/v1
-SERVER_LLM_API_KEY=sk-...
-SERVER_LLM_MODEL=gpt-4
-```
+The generate route uses `lib/rate-limiter.js` for IP-based throttling and `lib/generate-route-utils.js` for payload validation, vision model detection, and message assembly.
 
-When these are set, users can enable "Access Password" mode to use the server's API key instead of providing their own.
+### Layout Structure
 
-## Component Organization
+- `TopBar.jsx`: Header with logo, model status, history/settings buttons
+- `WorkspaceSidebar.jsx`: Composes the sidebar with three accordion panels (input, code, tools)
+- `Sidebar.jsx`: Collapsible container with responsive breakpoints
+- `SidebarCard.jsx`: Accordion-style expandable panel
+- `Spine.jsx`: Collapsed sidebar mini-view with icon buttons
 
-### Feature Components (`components/`)
-- `Chat.jsx`: User input, chart type selection, generation controls
-- `CodeEditor.jsx`: Monaco editor with clear/optimize/apply actions
-- `DrawioCanvas.jsx`: Draw.io iframe integration with postMessage API
-- `ExcalidrawCanvas.jsx`: Excalidraw canvas alternative
-- `ImageUpload.jsx`: Image upload for vision models (≤5MB)
-- `OptimizationPanel.jsx`: Advanced optimization checklist UI
-- `ConfigManager.jsx`: Multi-config CRUD interface
-- `HistoryModal.jsx`: Recent 20 generations with replay
-- `AccessPasswordModal.jsx`: Access password enablement
-- `ContactModal.jsx`: Contact information modal
-- `Notification.jsx`: Toast-style notifications
+### Key Modules
 
-### Primitive Components (`components/ui/`)
-Reusable primitives: `Button`, `Input`, `Modal`, `Select`, `Spinner`
-
-### Utilities (`lib/`)
-- `config-manager.js`: Config storage and retrieval
-- `history-manager.js`: Generation history (max 20 entries)
-- `llm-client.js`: LLM API abstraction layer
-- `optimizeArrows.js`: Arrow anchor position optimization
-- `prompts.js`: System prompts and templates
-- `constants.js`: Chart types and application constants
-- `design-system.js`: Shared design tokens
-- `imageHelpers.js`: Image compression and base64 conversion
+| Module | Purpose |
+|--------|---------|
+| `lib/llm-client.js` | OpenAI/Anthropic API adapter with streaming |
+| `lib/prompts.js` | System prompts, user prompt templates, continuation/optimization prompts |
+| `lib/drawio-code-utils.js` | SSE stream reading, XML header stripping, post-processing |
+| `lib/generation-utils.js` | Input normalization, error parsing, content extraction |
+| `lib/config-manager.js` | CRUD operations for LLM configs in localStorage |
+| `lib/schemas.js` | Zod schemas for config validation (`ConfigSchema`, `ConnectionConfigSchema`) |
+| `lib/optimizeArrows.js` | Arrow anchor point optimization algorithm |
+| `lib/blueprint-phase.js` | Generation phase constants (SCANNING -> DRAFTING -> REVEAL) |
 
 ## Common Tasks
 
 ### Adding a New Chart Type
 1. Add entry to `CHART_TYPES` in `lib/constants.js`
 2. Update system prompt in `lib/prompts.js` if needed
-3. Chart type will automatically appear in dropdown
 
-### Adding a New LLM Provider
-1. Add provider type handling in `lib/llm-client.js` (follow OpenAI/Anthropic pattern)
-2. Add provider option in `components/ConfigManager.jsx`
-3. Update server route in `app/api/generate/route.js` if using server-side config
+### Adding a New Style Preset
+1. Add preset definition in `lib/style-presets.js` with `styleChanges` and `disableChanges`
+2. It auto-registers via `lib/tool-registry.js`
 
-### Modifying Optimization Logic
-- Auto-optimization: Edit `optimizeExcalidrawCode()` in `lib/optimizeArrows.js`
-- AI-based optimization: Modify `OPTIMIZATION_SYSTEM_PROMPT` in `lib/prompts.js`
+### Adding a New Drawing Trick
+1. Add trick definition in `lib/drawing-tricks.js` with an `apply(xml)` function
+2. If it should auto-apply for a theme, add it to `THEME_POSTPROCESSING_TRICKS` in `lib/theme-postprocess.js`
+
+### Adding a New Diagram Theme
+1. Create theme file in `lib/themes/` following existing pattern (export `colorPalette` + metadata)
+2. Register in `lib/themes/index.js`
+
+## Environment Variables
+
+Optional server-side LLM config (`.env`):
+
+```bash
+ACCESS_PASSWORD=your-secure-password
+SERVER_LLM_TYPE=openai
+SERVER_LLM_BASE_URL=https://api.openai.com/v1
+SERVER_LLM_API_KEY=sk-...
+SERVER_LLM_MODEL=gpt-4
+```
 
 ## Path Aliases
 
-The project uses `@/` as an alias for the root directory (configured in `jsconfig.json`):
+`@/` maps to project root (configured in `jsconfig.json`):
 ```javascript
-import Component from '@/components/Component';
-import { helper } from '@/lib/helper';
+import { storage } from '@/lib/storage';
 ```
 
-## Language & Localization
+## UI Language
 
-Most UI strings are currently in Chinese. When modifying UI text, maintain consistency with existing language or add proper i18n if implementing localization.
-
-## Testing
-
-No test framework is currently configured. When adding tests, consider:
-- Jest for unit tests
-- Playwright for E2E tests of the generation flow
-- Testing localStorage interactions requires browser environment mocking
-
-## Deployment Notes
-
-- The app is deployed on Vercel (see README for live URL)
-- Requires environment variables to be set in Vercel dashboard for server-side config
-- All client-side data (configs, history) is stored in browser localStorage
-- No database or backend persistence layer exists
+UI strings are in Chinese. Maintain consistency when modifying.

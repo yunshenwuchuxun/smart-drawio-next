@@ -1,24 +1,180 @@
 @import "tailwindcss";
 
+/* Light Theme (Default) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-accent: #FF4F00;
+  --color-accent-hover: #E64600;
+  --color-accent-alpha10: rgba(255,79,0,0.1);
+  --color-bg-app: #F9FAFB;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-input: #F3F4F6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-border-subtle: rgba(0,0,0,0.08);
+  --color-border-active: rgba(0,0,0,0.15);
+  --color-error: #DC2626;
+  --color-success: #16A34A;
+  --color-warning: #CA8A04;
+  --color-focus-ring: rgba(255,79,0,0.4);
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-sidebar: 4px 0 12px rgba(0,0,0,0.05);
+  --shadow-overlay: 0 24px 48px rgba(0,0,0,0.2);
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --color-accent: #FF5F1F;
+  --color-accent-hover: #FF7340;
+  --color-accent-alpha10: rgba(255,95,31,0.1);
+  --color-bg-app: #050505;
+  --color-bg-surface: #121212;
+  --color-bg-input: #1E1E1E;
+  --color-text-primary: #EDEDED;
+  --color-text-secondary: #A1A1AA;
+  --color-text-tertiary: #71717A;
+  --color-border-subtle: rgba(255,255,255,0.12);
+  --color-border-active: rgba(255,255,255,0.2);
+  --color-error: #EF4444;
+  --color-success: #22C55E;
+  --color-warning: #EAB308;
+  --color-focus-ring: rgba(255,95,31,0.4);
+
+  --shadow-card: 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-sidebar: 0 0 0 1px rgba(255,255,255,0.08);
+  --shadow-overlay: 0 24px 48px rgba(0,0,0,0.6);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-bg-app);
+  --color-foreground: var(--color-text-primary);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
 }
 
-/* Hide scrollbar utility class */
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Animation tokens */
+:root {
+  --animation-spring: cubic-bezier(0.25, 1, 0.5, 1);
+  --animation-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-panel: 400ms;
+}
+
+/* Layout tokens */
+:root {
+  --sidebar-width-expanded: 320px;
+  --sidebar-width-collapsed: 48px;
+  --topbar-height: 48px;
+  --panel-header-height: 48px;
+}
+
+/* Z-index layers */
+:root {
+  --z-base: 0;
+  --z-sidebar: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+/* Blueprint Animation Keyframes */
+@keyframes scan {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-draft {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25%, 75% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Utility classes */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Focus ring utility */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Typography utilities */
+.text-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* Touch target minimum size */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
 }

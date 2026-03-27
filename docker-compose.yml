@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      # - ACCESS_PASSWORD=
+      # - SERVER_LLM_TYPE=openai
+      # - SERVER_LLM_BASE_URL=https://api.openai.com/v1
+      # - SERVER_LLM_API_KEY=sk-...
+      # - SERVER_LLM_MODEL=gpt-4
+    restart: unless-stopped

@@ -1,157 +1,155 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
-import { historyManager } from '../lib/history-manager.js';
-import { CHART_TYPES } from '../lib/constants.js';
-import ConfirmDialog from './ConfirmDialog';
+import { useCallback, useState } from 'react';
+
+import ConfirmDialog from '@/components/ConfirmDialog';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import { CHART_TYPES } from '@/lib/constants';
+import { historyManager } from '@/lib/history-manager';
+
+const INITIAL_CONFIRM_STATE = {
+  isOpen: false,
+  title: '',
+  message: '',
+  onConfirm: null,
+};
+
+function truncateText(text, maxLength = 100) {
+  if (!text) return '';
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function formatTimestamp(timestamp) {
+  return new Date(timestamp).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function HistoryModal({ isOpen, onClose, onApply }) {
-  const [histories, setHistories] = useState([]);
-  const [confirmDialog, setConfirmDialog] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: null
-  });
+  const [, setHistoryVersion] = useState(0);
+  const [confirmDialog, setConfirmDialog] = useState(INITIAL_CONFIRM_STATE);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadHistories();
-    }
-  }, [isOpen]);
+  const refreshHistories = useCallback(() => {
+    setHistoryVersion((current) => current + 1);
+  }, []);
 
-  const loadHistories = () => {
-    const allHistories = historyManager.getHistories();
-    setHistories(allHistories);
-  };
+  const closeConfirmDialog = useCallback(() => {
+    setConfirmDialog(INITIAL_CONFIRM_STATE);
+  }, []);
 
-  const handleApply = (history) => {
+  const openConfirmDialog = useCallback((nextState) => {
+    setConfirmDialog({ ...INITIAL_CONFIRM_STATE, ...nextState });
+  }, []);
+
+  const histories = isOpen ? historyManager.getHistories() : [];
+  const hasHistories = histories.length > 0;
+
+  const handleApply = useCallback((history) => {
     onApply?.(history);
     onClose();
-  };
+  }, [onApply, onClose]);
 
-  const handleDelete = (id) => {
-    setConfirmDialog({
+  const handleDelete = useCallback((id) => {
+    openConfirmDialog({
       isOpen: true,
-      title: '确认删除',
+      title: '删除历史记录',
       message: '确定要删除这条历史记录吗？',
       onConfirm: () => {
         historyManager.deleteHistory(id);
-        loadHistories();
-      }
+        refreshHistories();
+      },
     });
-  };
+  }, [openConfirmDialog, refreshHistories]);
 
-  const handleClearAll = () => {
-    setConfirmDialog({
+  const handleClearAll = useCallback(() => {
+    openConfirmDialog({
       isOpen: true,
-      title: '确认清空',
+      title: '清空历史记录',
       message: '确定要清空所有历史记录吗？此操作不可恢复。',
       onConfirm: () => {
         historyManager.clearAll();
-        loadHistories();
-      }
+        refreshHistories();
+      },
     });
-  };
+  }, [openConfirmDialog, refreshHistories]);
 
-  const truncateText = (text, maxLength = 100) => {
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  };
+  const historyCards = histories.map((history) => {
+    const chartTypeLabel = CHART_TYPES[history.chartType] || history.chartType;
 
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      <div className="relative bg-white rounded border border-gray-300 w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">历史记录</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {histories.length > 0 && (
-            <div className="mb-4">
-              <button
-                onClick={handleClearAll}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
-              >
-                清空全部
-              </button>
+    return (
+      <article
+        key={history.id}
+        className="rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">
+                {chartTypeLabel}
+              </span>
+              <span className="text-xs text-gray-500">{formatTimestamp(history.timestamp)}</span>
             </div>
-          )}
-
-          <div className="space-y-3">
-            {histories.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                暂无历史记录
-              </div>
-            ) : (
-              histories.map((history) => (
-                <div
-                  key={history.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:border-gray-300"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
-                          {CHART_TYPES[history.chartType] || history.chartType}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(history.timestamp).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-900 mb-2">
-                        {truncateText(history.userInput)}
-                      </p>
-                      {history.config && (
-                        <div className="text-xs text-gray-500">
-                          模型: {history.config.name} - {history.config.model}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <button
-                        onClick={() => handleApply(history)}
-                        className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200"
-                      >
-                        应用
-                      </button>
-                      <button
-                        onClick={() => handleDelete(history.id)}
-                        className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
+            <p className="mb-2 text-sm text-gray-900">{truncateText(history.userInput)}</p>
+            {history.config && (
+              <p className="text-xs text-gray-500">
+                模型：{history.config.name} - {history.config.model}
+              </p>
             )}
           </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button size="sm" onClick={() => handleApply(history)}>
+              应用
+            </Button>
+            <Button size="sm" variant="danger" onClick={() => handleDelete(history.id)}>
+              删除
+            </Button>
+          </div>
         </div>
-      </div>
+      </article>
+    );
+  });
+
+  return (
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title="历史记录" maxWidth="max-w-4xl">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-gray-500">
+              查看最近生成过的图表记录，并可一键恢复到编辑区。
+            </p>
+            {hasHistories && (
+              <Button size="sm" variant="danger" onClick={handleClearAll}>
+                清空全部
+              </Button>
+            )}
+          </div>
+
+          {hasHistories ? (
+            <div className="space-y-3">{historyCards}</div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-300 py-10 text-center text-sm text-gray-500">
+              暂无历史记录
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onClose={closeConfirmDialog}
         onConfirm={() => {
           confirmDialog.onConfirm?.();
-          setConfirmDialog({ ...confirmDialog, isOpen: false });
+          closeConfirmDialog();
         }}
         title={confirmDialog.title}
         message={confirmDialog.message}
         type="danger"
       />
-    </div>
+    </>
   );
 }

@@ -1,24 +1,58 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { debounce } from '@/lib/debounce';
+import { createConfigureMessage } from '@/lib/drawio-styles';
 
-export default function DrawioCanvas({ elements, xml }) {
+const DEFAULT_DRAWIO_ORIGIN = 'https://embed.diagrams.net';
+const DRAWIO_ORIGIN = process.env.NEXT_PUBLIC_DRAWIO_ORIGIN || DEFAULT_DRAWIO_ORIGIN;
+
+function normalizeOrigin(origin) {
+  try {
+    return new URL(origin).origin;
+  } catch {
+    return null;
+  }
+}
+
+function isValidXml(xml) {
+  if (!xml || typeof xml !== 'string') return false;
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    return !doc.querySelector('parsererror');
+  } catch {
+    return false;
+  }
+}
+
+const DRAWIO_TARGET_ORIGIN = normalizeOrigin(DRAWIO_ORIGIN) || DEFAULT_DRAWIO_ORIGIN;
+const ALLOWED_DRAWIO_ORIGINS = new Set([
+  DRAWIO_TARGET_ORIGIN,
+  'https://embed.diagrams.net',
+  'https://app.diagrams.net',
+  'https://draw.io',
+  'https://www.draw.io',
+]);
+
+function escapeXml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+export default function DrawioCanvas({ elements, xml, onXmlChange }) {
   const iframeRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
-
-  // Escape special XML characters
-  const escapeXml = (text) => {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
-  };
+  const isFirstLoad = useRef(true);
+  const cssInjected = useRef(false);
+  const lastLoadedXmlRef = useRef(null);
 
   // Convert JSON elements to draw.io XML format
-  const convertToDrawioXML = (elements) => {
+  const convertToDrawioXML = useCallback((elements) => {
     if (!elements || elements.length === 0) {
       return `<mxfile><diagram id="empty" name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>`;
     }
@@ -47,10 +81,13 @@ export default function DrawioCanvas({ elements, xml }) {
     });
 
     return `<mxfile><diagram id="generated" name="Page-1"><mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100"><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells}</root></mxGraphModel></diagram></mxfile>`;
-  };
+  }, []);
 
-  // Load diagram into draw.io iframe
-  const loadDiagram = (xml) => {
+  // Load diagram into draw.io iframe (internal)
+  const loadDiagramImmediate = useCallback((xml) => {
+    if (!xml) return;
+    lastLoadedXmlRef.current = xml;
+
     if (iframeRef.current && iframeRef.current.contentWindow) {
       iframeRef.current.contentWindow.postMessage(
         JSON.stringify({
@@ -58,24 +95,75 @@ export default function DrawioCanvas({ elements, xml }) {
           xml: xml,
           autosave: 1
         }),
-        '*'
+        DRAWIO_TARGET_ORIGIN
       );
+
+      // After programmatic XML loads, draw.io steals keyboard focus to the
+      // cross-origin iframe, which prevents app-level Ctrl+Z/Y from firing.
+      // Reclaim focus so undo/redo shortcuts keep working.
+      setTimeout(() => {
+        if (document.activeElement === iframeRef.current) {
+          iframeRef.current.blur();
+        }
+      }, 200);
     }
-  };
+  }, []);
+
+  // Debounced load for subsequent updates
+  const loadDiagramDebounced = useMemo(
+    () => debounce((xml) => loadDiagramImmediate(xml), 300),
+    [loadDiagramImmediate]
+  );
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => loadDiagramDebounced.cancel();
+  }, [loadDiagramDebounced]);
+
+  // Inject CSS styles into draw.io iframe (best-effort, requires configure=1 URL param)
+  const injectStyles = useCallback(() => {
+    if (iframeRef.current && iframeRef.current.contentWindow && !cssInjected.current) {
+      try {
+        const isDark = document.documentElement.dataset.theme === 'dark';
+        iframeRef.current.contentWindow.postMessage(
+          createConfigureMessage(isDark),
+          DRAWIO_TARGET_ORIGIN
+        );
+        cssInjected.current = true;
+      } catch (e) {
+        // CSS injection is best-effort; draw.io works fine without it
+      }
+    }
+  }, []);
 
   // Listen for messages from draw.io iframe
   useEffect(() => {
     const handleMessage = (event) => {
-      if (event.data.length > 0) {
+      const iframeWindow = iframeRef.current?.contentWindow;
+      if (!iframeWindow || event.source !== iframeWindow) {
+        return;
+      }
+
+      if (!ALLOWED_DRAWIO_ORIGINS.has(event.origin)) {
+        return;
+      }
+
+      if (event.data && event.data.length > 0) {
         try {
           const msg = JSON.parse(event.data);
 
-          if (msg.event === 'init') {
+          // Handle both 'init' and 'ready' events (draw.io uses 'init' in embed mode)
+          if (msg.event === 'init' || msg.event === 'ready') {
             setIsReady(true);
-          } else if (msg.event === 'export') {
-            console.log('Diagram exported:', msg.data);
-          } else if (msg.event === 'save') {
-            console.log('Diagram saved:', msg.xml);
+            // Inject CSS styles after init
+            injectStyles();
+          } else if (msg.event === 'save' || msg.event === 'autosave') {
+            if (msg.xml) {
+              lastLoadedXmlRef.current = msg.xml;
+            }
+            if (onXmlChange && msg.xml) {
+              onXmlChange(msg.xml);
+            }
           }
         } catch (e) {
           // Ignore non-JSON messages
@@ -85,7 +173,7 @@ export default function DrawioCanvas({ elements, xml }) {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [onXmlChange, injectStyles]);
 
   // Fallback: force ready state after timeout if init event doesn't fire
   useEffect(() => {
@@ -94,7 +182,7 @@ export default function DrawioCanvas({ elements, xml }) {
         console.warn('Draw.io init timeout, forcing ready state');
         setIsReady(true);
       }
-    }, 3000);
+    }, 8000);
     return () => clearTimeout(timer);
   }, [isReady]);
 
@@ -104,27 +192,41 @@ export default function DrawioCanvas({ elements, xml }) {
       let diagramXml;
 
       if (xml) {
-        // Use XML directly
         diagramXml = xml;
       } else if (elements && elements.length > 0) {
-        // Convert JSON to XML
         diagramXml = convertToDrawioXML(elements);
       } else {
-        // Load empty diagram on initial load
         diagramXml = convertToDrawioXML([]);
       }
 
-      loadDiagram(diagramXml);
+      if (diagramXml && diagramXml === lastLoadedXmlRef.current) {
+        return;
+      }
+
+      // Validation gate: reject malformed XML before sending to draw.io
+      if (diagramXml && !isValidXml(diagramXml)) {
+        console.warn('[DrawioCanvas] Rejected invalid XML, skipping load');
+        return;
+      }
+
+      // First load: immediate, subsequent: debounced
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false;
+        loadDiagramImmediate(diagramXml);
+      } else {
+        loadDiagramDebounced(diagramXml);
+      }
     }
-  }, [xml, elements, isReady]);
+  }, [xml, elements, isReady, loadDiagramImmediate, loadDiagramDebounced, convertToDrawioXML]);
 
   return (
     <div className="w-full h-full">
       <iframe
         ref={iframeRef}
-        src="https://embed.diagrams.net/?embed=1&proto=json&ui=min"
+        src="https://embed.diagrams.net/?embed=1&proto=json&ui=min&modified=0&noSaveBtn=1&noExitBtn=1&saveAndExit=0"
         className="w-full h-full border-0"
-        allow="fullscreen"
+        allow="fullscreen; clipboard-read; clipboard-write"
+        referrerPolicy="no-referrer-when-downgrade"
       />
     </div>
   );

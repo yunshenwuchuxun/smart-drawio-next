@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import {
   validateImage,
   createImageObject,
@@ -227,10 +228,13 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
         <div className="flex-1 flex flex-col">
           <div className="flex-1 flex justify-center relative bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
             {imagePreview && (
-              <img
+              <Image
                 src={imagePreview}
                 alt="预览"
-                className="w-full object-contain"
+                fill
+                sizes="100vw"
+                className="object-contain"
+                unoptimized
               />
             )}
 
