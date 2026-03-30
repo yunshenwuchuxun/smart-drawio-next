@@ -22,8 +22,8 @@
   --shadow-sidebar: 4px 0 12px rgba(0,0,0,0.05);
   --shadow-overlay: 0 24px 48px rgba(0,0,0,0.2);
 
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
 }
 
 /* Dark Theme */
@@ -52,8 +52,8 @@
 @theme inline {
   --color-background: var(--color-bg-app);
   --color-foreground: var(--color-text-primary);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
 }
 
 body {

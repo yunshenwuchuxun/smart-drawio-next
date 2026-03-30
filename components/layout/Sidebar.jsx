@@ -9,11 +9,17 @@ export default function Sidebar({
   status = 'ready', // 'ready' | 'generating' | 'error'
   onCollapseChange,
 }) {
-  const [collapsed, setCollapsed] = useState(() => storage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true');
+  const [collapsed, setCollapsed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobileOverlay, setIsMobileOverlay] = useState(false);
   const [isMobileHidden, setIsMobileHidden] = useState(false);
   const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    const persistedCollapsed = storage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true';
+    setCollapsed(persistedCollapsed);
+    onCollapseChange?.(persistedCollapsed);
+  }, [onCollapseChange]);
 
   // Handle responsive breakpoints
   useEffect(() => {
