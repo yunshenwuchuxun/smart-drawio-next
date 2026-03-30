@@ -1,178 +1,198 @@
 # Smart Drawio Next
 
-> Generate editable, publication-ready Draw.io diagrams from natural language or reference images in seconds.
-
 [中文文档](./README.md)
+
+> Generate editable Draw.io diagrams from natural language or reference images in seconds, optimized for research, documentation, and presentations.
 
 ## Live Demo
 
-Try it online: <https://smart-drawio-next.vercel.app/>
-
-(Requires your own API Key)
+- Demo: <https://smart-drawio-next.vercel.app/>
+- Note: the hosted version requires your own API key
 
 ## Screenshots
 
-![Home](./public/images/page.png)
-![Transformer](./public/images/transformer.png)
-![Swin-Transformer](./public/images/swin.png)
-![CLIP](./public/images/clip.png)
-![ProSST](./public/images/prosst.png)
+| Home | Transformer |
+|------|-------------|
+| ![Home](./public/images/page.png) | ![Transformer](./public/images/transformer.png) |
 
-## Introduction
+| Swin-Transformer | CLIP |
+|------------------|------|
+| ![Swin-Transformer](./public/images/swin.png) | ![CLIP](./public/images/clip.png) |
 
-[Smart Drawio Next](https://github.com/yunshenwuchuxun/smart-drawio-next) combines Next.js 16, an embedded Draw.io canvas, and streaming LLM calls to let you:
+| ProSST |
+|--------|
+| ![ProSST](./public/images/prosst.png) |
 
-- Describe a diagram in natural language or upload a reference image to generate structured charts automatically.
-- Fine-tune the generated XML code in a built-in Monaco Editor.
-- Sync results to the embedded Draw.io canvas for visual adjustments with one click.
-- Use the advanced optimization panel to let AI clean up layouts, unify styles, or add annotations.
+## Overview
 
-The project ships with multi-model configuration, access passwords, generation history, notifications, and more — ready to deploy as a personal productivity tool or an internal team service.
+[smart-drawio-next](https://github.com/yunshenwuchuxun/smart-drawio-next) is a diagram generation tool built with Next.js 16, embedded Draw.io, and streaming LLM APIs. It helps you:
 
-## Features
+- Generate structured diagrams from natural language prompts
+- Upload reference images and convert them into editable diagram content
+- Fine-tune XML / JSON in Monaco Editor
+- Sync output directly into an embedded Draw.io canvas
+- Use post-processing tools to improve layout, connectors, styles, and annotations
 
-- **LLM-Native Diagramming** — Streams generation progress in real time with "continue generation" support for long outputs. Choose from 20+ diagram types or let the model decide automatically.
-- **Multimodal Input** — Drag-and-drop PNG/JPG/WebP/GIF (up to 5 MB) or use the file picker. Vision models convert existing diagrams into editable content.
-- **Dual-Canvas Sync** — Monaco Editor for viewing and editing raw code, Draw.io iframe for rendering and visual tweaking. Re-apply code at any time.
-- **Smart Optimization** — One-click arrow anchor and line-width fixes, or use the advanced optimization panel to let AI handle custom requirements.
-- **Configuration Manager** — Create, clone, import/export any number of OpenAI/Anthropic-compatible configs from the UI with live connection testing.
-- **History & Notifications** — Last 20 generations saved in browser localStorage with instant replay. Toast notifications and confirmation dialogs improve overall UX.
+The project includes multi-model configuration, access-password mode, generation history, and notifications. It can be deployed as a personal tool or an internal team service.
 
-## Diagram Types
+## Core Features
 
-20+ diagram types available — pick one or let the model decide:
+- **Streaming generation** with support for continuing truncated outputs
+- **Multimodal input** with both text and image-based workflows
+- **Code + canvas workflow** for editing XML and previewing the result side by side
+- **Post-processing toolchain** for structure, text, connector, and style refinement
+- **Multi-provider config management** for OpenAI / Anthropic-compatible APIs
+- **Local history** with replay support for recent generations
 
-| Type | Type | Type | Type |
-|------|------|------|------|
-| Flowchart | Mind Map | Org Chart | Sequence Diagram |
-| UML Class | ER Diagram | Gantt Chart | Timeline |
-| Tree | Network Topology | Architecture | Data Flow |
-| State Diagram | Swimlane | Concept Map | Fishbone |
-| SWOT Analysis | Pyramid | Funnel | Venn Diagram |
-| Matrix | Infographic | | |
+## Supported Diagram Types
 
-## Diagram Themes
+The app supports 20+ diagram types. You can choose one explicitly or let the model decide:
 
-10 built-in color themes, one-click switch:
+- Flowchart
+- Mind Map
+- Org Chart
+- Sequence Diagram
+- UML Class Diagram
+- ER Diagram
+- Gantt Chart
+- Timeline
+- Tree
+- Network Topology
+- Architecture Diagram
+- Data Flow Diagram
+- State Diagram
+- Swimlane Diagram
+- Concept Map
+- Fishbone Diagram
+- SWOT Analysis
+- Pyramid Diagram
+- Funnel Diagram
+- Venn Diagram
+- Matrix Diagram
+- Infographic
 
-| Theme | Best For |
-|-------|----------|
-| Research | Paper figures, academic posters |
-| Business | Business reports, project reviews |
-| Warm | Education, user-facing demos |
-| Cool | Technical architecture, system design |
-| Dark | Dark-background presentations |
-| Contrast | Projector presentations, visual emphasis |
-| Pastel | Lightweight docs, friendly style |
-| Forest | Nature, sustainability topics |
-| Violet | Creative, design-oriented diagrams |
-| Neutral | General docs, low visual noise |
+## Built-in Themes
+
+10 built-in color themes are available:
+
+- Research
+- Business
+- Warm
+- Cool
+- Dark
+- Contrast
+- Pastel
+- Forest
+- Violet
+- Neutral
 
 ## Tools System
 
-Post-process diagrams via the sidebar "Tools" panel. All operations are XML transforms — instant, undoable.
+After generation, you can continue refining the diagram in the sidebar tools panel. All operations are XML-based transforms.
 
-### Drawing Tricks
+### 1. Drawing Tricks
 
-Batch adjustments to diagram structure and connectors:
+Used for bulk layout and connector refinement:
 
-| Trick | Description |
-|-------|-------------|
-| Grid Snap | Align all coordinates to a 10px grid |
-| Orthogonal Routing | Switch connectors to right-angle polylines with auto waypoints |
-| Curved Routing | Switch connectors to smooth curves |
-| Label Background | Add white background to connector labels |
-| Consistent Spacing | Equalize horizontal spacing between same-layer elements |
-| Jump Crossings | Show arc jumps at connector crossings |
-| Rounded Edges | Round connector bends |
-| Normalize Arrows | Unify to solid end arrows, remove start arrows |
-| Remove Waypoints | Clear manual waypoints, let routing auto-calculate |
+- **Grid Snap**
+- **Orthogonal Routing**
+- **Curved Routing**
+- **Label Background**
+- **Consistent Spacing**
+- **Jump Crossings**
+- **Rounded Edges**
+- **Normalize Arrows**
+- **Remove Waypoints**
 
-### Style Presets
+### 2. Style Presets
 
-Toggle visual effects, freely stackable:
+Used for stackable visual effects:
 
-| Preset | Description |
-|--------|-------------|
-| Shadow | Add drop shadow to shapes |
-| Gradient | Auto-generate downward gradient from fill color |
-| Rounded | Enable rounded corners |
-| Glass | Add draw.io glass highlight |
-| Sketch | Enable rough sketch hand-drawn effect |
-| Comic | Cartoon-style with slight line jitter |
-| Dashed | Switch to dashed borders/connectors |
-| Transparent | Lower fill opacity for wireframe style |
-| Bold Stroke | Thicken shapes and connectors to 3px |
-| No Stroke | Remove borders, flat color blocks only |
-| Absolute Arc | Uniform rounded corners using absolute pixel values |
-| Cross-Hatch / Dots / Zigzag | Various hand-drawn pattern fills |
-| Open Arrow | Use open triangle arrowheads |
+- Shadow
+- Gradient
+- Rounded
+- Glass
+- Sketch
+- Comic
+- Dashed
+- Transparent
+- Bold Stroke
+- No Stroke
+- Absolute Arc
+- Cross-Hatch
+- Dot Fill
+- Zigzag Fill
+- Semi-Opaque
+- Fade Stroke
+- Fixed Dash
+- Open Arrow
 
-### Style Packs
+### 3. Style Packs
 
-Apply a complete visual style in one click — covers shapes, connectors, and text:
+Used for one-click full visual styles:
 
-| Pack | Description |
-|------|-------------|
-| Research Clean | No decorations, orthogonal lines, neat text — paper-ready |
-| Presentation Cards | Rounded + shadow + curves — presentation-ready |
-| Business Clean | Formal style with rounded shadows and orthogonal routing |
-| Flat Minimal | Remove all decorations, modern flat design |
-| Wireframe | Reduced visuals, focus on layout discussion |
-| Comic Whiteboard | Casual whiteboard discussion style |
-| Watercolor Sketch | Hachure fills + curves — artistic sketch feel |
-| Minimal Outline | No fill, pure outlines, structure only |
-| Sticky Notes | Large rounded corners + soft shadows, sticky-note feel |
-| Blueprint Tech | Fixed dashes + low-opacity fills, engineering blueprint style |
+- **Research Clean**
+- **Presentation Cards**
+- **Business Clean**
+- **Flat Minimal**
+- **Wireframe**
+- **Comic Whiteboard**
+- **Watercolor Sketch**
+- **Minimal Outline**
+- **Sticky Notes**
+- **Blueprint Tech**
 
-### Text Tools
+### 4. Text Tools
 
-Batch text formatting adjustments:
+Used for batch text formatting:
 
-| Tool | Description |
-|------|-------------|
-| Wrap Labels | Enable HTML and whiteSpace=wrap |
-| Center Text | Unify horizontal/vertical centering |
-| Text Panels | Add white background + light border to labels |
-| Bold Text | Set all text to bold |
-| Compact Text | Unify to 11px font size for dense diagrams |
-| Text Padding | Increase spacing between text and shape borders |
+- Wrap Labels
+- Center Text
+- Text Panels
+- Bold Text
+- Compact Text
+- Text Padding
 
-## UI Modules
+## UI Structure
 
 1. **Input Area (Chat + ImageUpload)**
-   - Select a diagram type, enter a natural language prompt, or upload a reference image.
-   - Supports mid-generation stop, continue generation, and API error display.
+   - Enter prompts
+   - Upload reference images
+   - Stop or continue generation
+
 2. **Code Editor**
-   - Monaco Editor displays generated XML with clear, optimize, advanced optimize, and apply actions.
-   - Instant error feedback on XML parse failures.
-3. **Canvas (DrawioCanvas)**
-   - Embedded Draw.io iframe renders generated XML for further visual editing.
-4. **Auxiliary Modals**
-   - `ConfigManager`: Multi-config management, live testing, import/export.
-   - `AccessPasswordModal`: Access password setup and verification.
-   - `HistoryModal`, `ContactModal`, `OptimizationPanel`, etc.
+   - View and edit XML / JSON
+   - Run clear, optimize, advanced optimize, and apply actions
+
+3. **Canvas**
+   - Render the generated result
+   - Continue editing visually in Draw.io
+
+4. **Support Modals**
+   - `ConfigManager`
+   - `AccessPasswordModal`
+   - `HistoryModal`
+   - `OptimizationPanel`
+   - Other supporting panels
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) + React 19 |
-| Canvas | Draw.io embed (iframe) |
-| Editor | @monaco-editor/react |
-| Styling | Tailwind CSS v4 + custom design system |
-| LLM Integration | OpenAI / Anthropic-compatible APIs with SSE streaming |
-| State Persistence | localStorage (configs, history, access password) |
+- **Framework**: Next.js 16 (App Router) + React 19
+- **Canvas**: Draw.io embed
+- **Editor**: `@monaco-editor/react`
+- **Styling**: Tailwind CSS v4
+- **LLM Integration**: OpenAI / Anthropic-compatible APIs with SSE streaming
+- **Persistence**: localStorage
 
 ## Getting Started
 
-### Prerequisites
+### Requirements
 
 - Node.js >= 18.18
-- pnpm >= 8 (recommended)
-- An OpenAI / Anthropic-compatible API Key (or server-side config with access password)
+- pnpm >= 8
+- An available OpenAI / Anthropic-compatible API key
 
-### Installation
+### Install and Run
 
 ```bash
 git clone https://github.com/yunshenwuchuxun/smart-drawio-next.git
@@ -181,23 +201,24 @@ pnpm install
 pnpm dev
 ```
 
-Open <http://localhost:3000> in your browser.
+Then open: <http://localhost:3000>
 
-### Scripts
+### Common Commands
 
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Start development server |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server (run `pnpm build` first) |
+| `pnpm build` | Build for production |
+| `pnpm start` | Start production server |
 | `pnpm lint` | Run ESLint |
+| `pnpm test -- run` | Run unit tests |
 
 ## Docker Deployment
 
-### Prerequisites
+### Requirements
 
 - Docker >= 20.10
-- Docker Compose V2 (`docker compose`)
+- Docker Compose V2
 
 ### Quick Start
 
@@ -205,11 +226,13 @@ Open <http://localhost:3000> in your browser.
 docker compose up -d --build
 ```
 
-Open <http://localhost:3000>. The image uses a multi-stage build (`node:22-alpine`) with Next.js standalone output for a small footprint and fast startup.
+Then open: <http://localhost:3000>
 
-### Server-Side LLM Configuration (Optional)
+The image uses a multi-stage build and Next.js standalone output for deployment-friendly packaging.
 
-To let users share a single API Key via access password, uncomment and fill in the environment variables in `docker-compose.yml`:
+### Optional Server-Side LLM Config
+
+If you want multiple users to share one server-side configuration, set these in `docker-compose.yml`:
 
 ```yaml
 services:
@@ -222,103 +245,95 @@ services:
       - SERVER_LLM_MODEL=gpt-4
 ```
 
-Alternatively, create a `.env` file (see `.env.example`).
+You can also use a `.env` file based on `.env.example`.
 
-### Network & Proxy Configuration
+### Proxy and Local Model Setup
 
-The default `docker-compose.yml` does not bind any proxy settings, making it safe to commit to Git. For environments that require extra network configuration:
-
-1. Copy the override example:
-   ```bash
-   cp docker-compose.override.example.yml docker-compose.override.yml
-   ```
-2. Edit to match your environment, then restart:
-   ```bash
-   docker compose up -d --build
-   ```
-
-Docker Compose automatically merges `docker-compose.yml` with `docker-compose.override.yml`.
-
-#### Common Scenarios
-
-| Scenario | Configuration |
-|----------|--------------|
-| Route traffic through a host proxy | Enable `NODE_USE_ENV_PROXY=1`, `HTTP_PROXY`, `HTTPS_PROXY` |
-| Access a host-local model (Ollama, LM Studio, etc.) | Set `ALLOW_LOCAL_LLM_BASE_URLS=true`, use `http://host.docker.internal:<port>` as the Base URL |
-| Proxy re-signs HTTPS certificates | Mount your CA cert and set `NODE_EXTRA_CA_CERTS` (see example below). Avoid `NODE_TLS_REJECT_UNAUTHORIZED=0` |
-
-**Custom CA certificate example** (in `docker-compose.override.yml`):
-
-```yaml
-services:
-  app:
-    environment:
-      NODE_EXTRA_CA_CERTS: "/usr/local/share/ca-certificates/proxy-ca.crt"
-    volumes:
-      - ./certs/proxy-ca.crt:/usr/local/share/ca-certificates/proxy-ca.crt:ro
-```
-
-### Useful Commands
+If Docker needs a proxy or access to a model running on the host machine:
 
 ```bash
-docker compose logs -f app      # View logs
-docker compose down              # Stop services
-docker compose up -d --build     # Rebuild after code changes
-docker compose ps                # Check running status
+cp docker-compose.override.example.yml docker-compose.override.yml
 ```
 
-## LLM Configuration & Access Password
+Edit it for your environment, then restart:
 
-### Client-Side Multi-Config (Default)
+```bash
+docker compose up -d --build
+```
 
-1. Click **"Settings"** in the top-right corner.
-2. Choose a provider (OpenAI / Anthropic / compatible).
-3. Fill in `Base URL`, `API Key`, `Model`, and click "Test Connection" to verify.
-4. Configs are stored exclusively in browser localStorage. Switch, clone, export, or import as needed.
+Typical use cases:
 
-### Server-Side Unified Config (Access Password Mode, Optional)
+- Routing traffic through a host proxy
+- Accessing host-local Ollama or LM Studio
+- Mounting a custom CA certificate for enterprise proxies
 
-To share a single API Key across users:
+### Common Docker Commands
 
-1. Copy the example config: `cp .env.example .env`
-2. Set the following variables in `.env`:
+```bash
+docker compose logs -f app
+docker compose down
+docker compose up -d --build
+docker compose ps
+```
 
-| Variable | Description |
-|----------|-------------|
-| `ACCESS_PASSWORD` | Password users must enter |
-| `SERVER_LLM_TYPE` | `openai` or `anthropic` |
-| `SERVER_LLM_BASE_URL` | API endpoint (e.g., `https://api.openai.com/v1`) |
-| `SERVER_LLM_API_KEY` | API key (server-side only, never sent to the browser) |
-| `SERVER_LLM_MODEL` | Default model name |
+## LLM Configuration
 
-3. Restart the service. Users enter the access password in the UI to activate server-side config, which takes priority over local settings.
+### Client-Side Config Mode
 
-> The access password is verified server-side only. The real API Key is never exposed to the browser.
+By default, users configure these in the UI:
+
+- Provider
+- Base URL
+- API Key
+- Model
+
+All values are stored in browser localStorage only.
+
+### Server-Side Access Password Mode
+
+If you want the API key to stay on the server:
+
+1. Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+2. Set these variables:
+
+- `ACCESS_PASSWORD`
+- `SERVER_LLM_TYPE`
+- `SERVER_LLM_BASE_URL`
+- `SERVER_LLM_API_KEY`
+- `SERVER_LLM_MODEL`
+
+3. Restart the service, then users can enable the server-side config through the access password flow.
 
 ## FAQ
 
-- **Is my API Key uploaded anywhere?**
-  No. Local configs are stored in browser localStorage. The key is only sent to your own server during `/api/generate` calls, which then forwards requests to the LLM provider.
+### Will my API key be uploaded to a third party?
 
-- **What if generation is truncated?**
-  A "Continue Generation" button appears automatically. Clicking it sends a follow-up request with `isContinuation=true` to resume from where it left off.
+No. Local configuration stays in the browser. Requests first go to your own server, which then calls the external model provider.
 
-- **Image recognition not working?**
-  Use a Vision-capable model (e.g., GPT-4o, GPT-4.1, Claude 3.5 Sonnet) and ensure the image is under 5 MB in a common format.
+### What if the output is truncated?
 
-- **Does history take up space?**
-  History is capped at 20 entries. You can delete individual entries or clear all from the History modal.
+The UI provides a continue-generation action automatically when needed.
 
-- **Access password shows "not configured"?**
-  Both `ACCESS_PASSWORD` and all `SERVER_LLM_*` variables must be set. Otherwise the API returns "Server access password not configured".
+### What if image recognition fails?
 
-## Contributing
+Use a vision-capable model and make sure the image format and size are valid.
 
-1. This project is based on [smart-excalidraw-next](https://github.com/liujuntao123/smart-excalidraw-next).
-2. If you find this project helpful, please consider:
-   - Giving it a star on GitHub
-   - Sharing it with others who might benefit
+### Will history grow without limit?
+
+No. The app keeps only the most recent 20 entries by default.
+
+## Credits and Contributing
+
+- This project is based on [smart-excalidraw-next](https://github.com/liujuntao123/smart-excalidraw-next)
+- If it helps you, consider:
+  - Giving the repo a star
+  - Sharing it with others
 
 ## License
 
-MIT License — free to use, copy, and distribute with attribution.
+MIT
