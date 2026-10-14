@@ -15,7 +15,7 @@
 
 JSON 兼容输入拒绝未知类型或不合法元素，失败时保留原图和草稿。显式应用空数组 `[]` 表示创建空图，仍可撤销恢复。
 
-本阶段支持未压缩 Draw.io XML。压缩页面、PNG/SVG 导出、完整服务端凭据托管，以及全量依赖审计问题仍需后续工作。网页生产部署单独推进，线上地址保持现有版本。
+本阶段支持未压缩 Draw.io XML。压缩页面、内置 PNG/SVG 导出、完整服务端凭据托管，以及全量依赖审计问题仍需后续工作。网页部署由仓库配置的 Vercel Git 集成跟随代码更新。
 
 ## 第二阶段：共享核心（已完成）
 
@@ -39,10 +39,12 @@ JSON 兼容输入拒绝未知类型或不合法元素，失败时保留原图和
 
 整体验证：291 个 JavaScript 单元及协议测试、11 个 Python Skill 测试、8 个生产构建浏览器用例、ESLint 与 Next.js 生产构建通过。实际 MCP tarball 与 Skill ZIP 都在仓库外独立安装验证。浏览器回归中的 Draw.io 消息协议使用替身；MCP 工作流示例另外通过官方 Draw.io 静态查看器实际渲染，修复了无效箭头类型与连线标签错误换行。远端嵌入编辑器的完整编辑交互仍需后续验证。
 
-## 第五阶段：公开发布与生产部署（分别推进）
+## 第五阶段：公开发布（已完成）与项目同步
 
-已补独立包元数据、Registry `server.json`、安装说明、许可证声明、来源说明、打包和安装验证脚本，以及 CI 验证流程。CI 文件已配置，本轮检查在本地运行，尚未执行 GitHub 托管 CI。
+已补独立包元数据、Registry `server.json`、安装说明、许可证声明、来源说明、打包和安装验证脚本，以及 CI 验证流程。发布分支和版本标签的 GitHub 托管 CI 均已成功；本地与托管检查通过 291 个 JavaScript、11 个 Python 和 8 个浏览器测试。
 
-Skill/MCP 的版本入口为 `tools-v0.1.0`，使用独立发布分支与标签，网页生产部署保持现状。已核对 npm 账号和上游 MIT README 声明，并保留上游来源；Registry 需在 npm 版本公开可取后登记。具体发布流程见 [打包与发布](publishing.md)，Skill 使用见 [安装说明](skill-installation.md)。
+Skill/MCP 0.1.0 已在 [GitHub Release](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0)、[npm](https://www.npmjs.com/package/@yunshenwuchuxun/smart-drawio-mcp) 和[官方 Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.yunshenwuchuxun%2Fsmart-drawio/versions/0.1.0) 分发或登记，Registry 状态为 `active`。Skill 以 GitHub 文件包分发，没有独立 npm 包；公开渠道安装和 MCP 调用已验证。
 
-Vercel Preview 的实际远端编辑器验证通过后，再推广生产版本。压缩页面、PNG/SVG 导出、远程 MCP、服务端托管模型和完整 CLI 均作为后续可选工作。
+首次发布保持了网页版本；后续把源码与说明同步到 `main`，由仓库现有集成执行 CI 与自动部署。固定版本标签与发布包保留原内容。已核对上游 MIT README 声明并保留来源。具体发布流程见 [打包与发布](publishing.md)，Skill 使用见 [安装说明](skill-installation.md)。
+
+后续继续验证 Vercel 上真实远端编辑器的完整编辑交互。压缩页面、内置 PNG/SVG 导出、远程 MCP、服务端托管模型和完整 CLI 均作为后续可选工作。

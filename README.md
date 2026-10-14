@@ -2,7 +2,9 @@
 
 [中文文档](./README.zh.md)
 
-> Generate editable Draw.io diagrams from natural language or reference images in seconds, optimized for research, documentation, and presentations.
+> Create editable Draw.io diagrams from natural language or reference images, for research, documentation, and presentations.
+
+**Skill & MCP 0.1.0:** [GitHub release](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0) · [MCP on npm](https://www.npmjs.com/package/@yunshenwuchuxun/smart-drawio-mcp) · [Official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.yunshenwuchuxun%2Fsmart-drawio/versions/0.1.0)
 
 ## Live Demo
 
@@ -46,15 +48,67 @@ The project includes multi-model configuration, workspace recovery, generation h
 
 ## Agent Skill and MCP
 
-The Skill creates editable diagrams using the agent's own model. Install the versioned Skill with:
+Version **0.1.0 is published**. Choose the entry point that fits your workflow:
+
+| Entry point | What it does | Distribution | Model setup |
+| --- | --- | --- | --- |
+| Website | Generate from text or images, then edit the diagram in the embedded Draw.io canvas | [Hosted app](https://smart-drawio-next.vercel.app/) or self-hosted Next.js | Configure your provider in the browser |
+| `smart-drawio` Skill | Guide an agent through creating, editing, checking and saving editable diagrams | [GitHub Skill](skills/smart-drawio) and [release ZIP](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/download/tools-v0.1.0/smart-drawio-skill-0.1.0.zip) | Uses the agent's own model |
+| Smart Drawio MCP | Generate, validate, repair and style XML through local stdio tools | [npm package](https://www.npmjs.com/package/@yunshenwuchuxun/smart-drawio-mcp) and [Registry entry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.yunshenwuchuxun%2Fsmart-drawio/versions/0.1.0) | Only `generate_drawio` needs model API settings |
+
+### Install the Skill
+
+Install the fixed release:
 
 ```sh
 npx skills add https://github.com/yunshenwuchuxun/smart-drawio-next/tree/tools-v0.1.0/skills/smart-drawio
 ```
 
-Invoke `$smart-drawio` to create or modify research diagrams, architecture diagrams and flowcharts. Its Python 3 validator works offline without third-party dependencies; MCP is optional.
+The Skill is distributed as GitHub files, with no separate npm package. `npx skills` runs the general [Skills CLI](https://github.com/vercel-labs/skills), which downloads the Skill from the repository. Its Python 3 validator works offline without third-party dependencies; MCP is optional.
 
-The local MCP server exposes `generate_drawio`, `validate_drawio`, `repair_drawio`, `style_drawio` and `list_drawio_options`. Use `npx -y @yunshenwuchuxun/smart-drawio-mcp@0.1.0` as the client's stdio command. Generation uses your configured OpenAI/Anthropic-compatible provider; the other tools need no model credentials.
+Example agent request:
+
+> Use `$smart-drawio` to create an original encoder–decoder Transformer diagram, save it as transformer.drawio, and check its connectors and labels.
+
+### Configure the MCP server
+
+Use Node.js 20.9 or later and a client that supports local stdio MCP. For clients using `mcpServers` JSON:
+
+```json
+{
+  "mcpServers": {
+    "smart-drawio": {
+      "command": "npx",
+      "args": ["-y", "@yunshenwuchuxun/smart-drawio-mcp@0.1.0"]
+    }
+  }
+}
+```
+
+The client starts the server and communicates over stdin/stdout. Configure `SMART_DRAWIO_PROVIDER`, `SMART_DRAWIO_BASE_URL`, `SMART_DRAWIO_API_KEY` and `SMART_DRAWIO_MODEL` in the MCP process environment to enable generation through your OpenAI/Anthropic-compatible provider.
+
+| Tool | Function | Model API required |
+| --- | --- | --- |
+| `generate_drawio` | Create complete, validated XML from a text prompt | Yes |
+| `validate_drawio` | Check XML syntax, IDs, parents and references | No |
+| `repair_drawio` | Conservatively repair supported missing closing tags | No |
+| `style_drawio` | Apply themes, style packs, presets and drawing tricks | No |
+| `list_drawio_options` | List supported types, themes and tool options | No |
+
+The MCP server returns uncompressed XML for the client to save. PNG/SVG/PDF previews and exports need an available Draw.io renderer or editor. Version 0.1.0 provides local stdio tools; the Registry link is installation metadata, and the Vercel URL is the website. This package has no remote HTTP MCP endpoint or live canvas session control.
+
+### Generated examples
+
+Both examples below were rendered using the official Draw.io viewer and are available as editable files:
+
+| Skill workflow | MCP generation workflow |
+| --- | --- |
+| ![Transformer created with the Skill](docs/images/transformer-skill.png) | ![Transformer created through MCP](docs/images/transformer-mcp.png) |
+| [Editable .drawio](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/download/tools-v0.1.0/transformer-skill.drawio) | [Editable .drawio](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/download/tools-v0.1.0/transformer-mcp.drawio) |
+
+The Skill example used the agent's own model. The MCP example used a real OpenAI-compatible API request for `codex/gpt-6.1-sol`, then MCP validation and Draw.io rendering. The original MCP output includes one annotation crossed by a connector; the examples retain their actual outputs.
+
+[Release CI](https://github.com/yunshenwuchuxun/smart-drawio-next/actions/runs/38578657214) passed 291 JavaScript tests, 11 Python tests and 8 browser tests, plus lint, production build and isolated package installation. Public Skill installation and npm MCP handshake/tool calls were also verified.
 
 See [MCP setup](packages/mcp/README.md), [Skill installation](docs/skill-installation.md), and [version downloads](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0). The Next.js application remains independently deployable to Vercel.
 
@@ -313,7 +367,7 @@ By default, users configure these in the UI:
 - API Key
 - Model
 
-All values are stored in browser localStorage only.
+Saved configurations persist in browser localStorage. Generation sends the active model configuration and input to the application's API route, which calls the selected model provider.
 
 ### Workspace Recovery and Request Limits
 
@@ -327,9 +381,9 @@ Legacy JSON input rejects unsupported or invalid elements without replacing the 
 
 ## FAQ
 
-### Will my API key be uploaded to a third party?
+### Where does my API key go?
 
-No. Local configuration stays in the browser. Requests first go to your own server, which then calls the external model provider.
+The saved configuration is stored locally in your browser. Each generation request sends the selected configuration, including the API key, to the application's server; the server uses that key to authenticate with your selected model provider. MCP generation uses the credentials configured in its process environment. The Skill can generate XML with the agent's own model without a separate diagram-generation API configuration.
 
 ### What if the output is truncated?
 

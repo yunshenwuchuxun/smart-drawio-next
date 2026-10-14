@@ -1,6 +1,6 @@
 # Skill 与 MCP 发布
 
-当前已提供可本地安装的 Skill 和本地 stdio MCP。网页继续从根目录构建并部署到 Vercel；工具包独立打包，不需要运行网页。完整 CLI 产品和远程 HTTP MCP 属于可选后续功能。
+0.1.0 已公开发布：Skill 通过 GitHub 源码和 ZIP 分发，MCP 通过 npm 分发并登记到官方 Registry。网页继续从根目录构建并部署到 Vercel；工具包独立打包，不需要运行网页。完整 CLI 产品和远程 HTTP MCP 属于可选后续功能。
 
 ## 验证与打包
 
@@ -54,9 +54,13 @@ pnpm pack:tools
 
 - [GitHub Release：tools-v0.1.0](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0)：Skill ZIP、MCP tarball、示例和校验和。
 - [npm：@yunshenwuchuxun/smart-drawio-mcp](https://www.npmjs.com/package/@yunshenwuchuxun/smart-drawio-mcp)：本地 stdio MCP 安装包。
-- Registry 名称为 `io.github.yunshenwuchuxun/smart-drawio`；`package.json.mcpName` 与 `server.json.name` 必须一致。Registry 需在 npm 版本公开可取后单独登记。
+- [官方 MCP Registry 0.1.0](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.yunshenwuchuxun%2Fsmart-drawio/versions/0.1.0)：已登记，状态 `active`，名称 `io.github.yunshenwuchuxun/smart-drawio`。`package.json.mcpName` 与 `server.json.name` 必须一致。
 
-GitHub 工具版本使用独立分支和标签；发布 Skill/MCP 时保持 `main`，以免触发现有 Vercel 生产站自动更新。网站部署单独处理。
+Skill 没有独立 npm 包，也不包含在 MCP npm 包内。`npx skills add` 使用通用安装器从 GitHub 下载 Skill。
+
+首次工具发布使用独立分支和固定标签，保留了当时的网页版本。`main` 用于后续同步项目源码和文档；推送会触发仓库已配置的 CI 和 Vercel Git 集成。`tools-v0.1.0` 标签和已发布安装包保持原内容，README 更新不会覆盖 npm 0.1.0。
+
+公开 GitHub Skill 安装、npm 匿名安装、MCP 握手及工具调用均已验证。发布版本的 [GitHub 托管 CI](https://github.com/yunshenwuchuxun/smart-drawio-next/actions/runs/38578657214) 通过 291 个 JavaScript、11 个 Python 和 8 个浏览器测试，以及 lint、生产构建和 tarball 独立安装检查。
 
 ## npm 与 Registry
 

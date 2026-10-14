@@ -2,7 +2,9 @@
 
 [English](./README.md)
 
-> 用自然语言或参考图片，在几秒内生成可编辑、适合科研与演示场景的 Draw.io 图表。
+> 用自然语言或参考图片创建可编辑的 Draw.io 图表，适合科研、文档与演示场景。
+
+**Skill 与 MCP 0.1.0 已发布：** [GitHub 版本](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0) · [MCP npm 包](https://www.npmjs.com/package/@yunshenwuchuxun/smart-drawio-mcp) · [官方 MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.yunshenwuchuxun%2Fsmart-drawio/versions/0.1.0)
 
 ## 在线体验
 
@@ -47,15 +49,67 @@
 
 ## Skill 与 MCP
 
-Skill 使用助手自身模型创建可编辑图表。安装固定版本：
+**0.1.0 已公开发布**，可按使用方式选择入口：
+
+| 入口 | 功能 | 分发位置 | 模型配置 |
+| --- | --- | --- | --- |
+| 网页应用 | 从文本或图片生成图表，在内嵌 Draw.io 中编辑 | [在线应用](https://smart-drawio-next.vercel.app/)或自行部署 Next.js | 在浏览器配置提供商 |
+| `smart-drawio` Skill | 指导助手创建、修改、校验并保存可编辑图表 | [GitHub Skill](skills/smart-drawio)和[版本 ZIP](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/download/tools-v0.1.0/smart-drawio-skill-0.1.0.zip) | 使用当前助手自身模型 |
+| Smart Drawio MCP | 通过本地 stdio 工具生成、校验、修复和美化 XML | [npm 包](https://www.npmjs.com/package/@yunshenwuchuxun/smart-drawio-mcp)和[Registry 登记](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.yunshenwuchuxun%2Fsmart-drawio/versions/0.1.0) | 仅 `generate_drawio` 需要模型 API |
+
+### 安装 Skill
+
+安装固定发布版本：
 
 ```sh
 npx skills add https://github.com/yunshenwuchuxun/smart-drawio-next/tree/tools-v0.1.0/skills/smart-drawio
 ```
 
-调用 `$smart-drawio` 创建或修改科研结构图、系统架构图和流程图。随包 Python 3 脚本可离线校验，不依赖第三方 Python 包；MCP 是可选增强。
+Skill 以 GitHub 文件包分发，没有独立 npm 包。命令中的 `npx skills` 运行通用 [Skills CLI 安装器](https://github.com/vercel-labs/skills)，实际从仓库下载 Skill。随包 Python 3 脚本可离线校验，不依赖第三方 Python 包；MCP 是可选增强。
 
-本地 MCP 提供 `generate_drawio`、`validate_drawio`、`repair_drawio`、`style_drawio` 和 `list_drawio_options`。客户端以 `npx -y @yunshenwuchuxun/smart-drawio-mcp@0.1.0` 启动 stdio 服务。生成工具需要配置模型 API，其余工具不需要模型密钥。
+调用示例：
+
+> `$smart-drawio` 画一张原始编码器—解码器 Transformer 架构图，保存为 transformer.drawio，并检查连线和文字布局。
+
+### 配置 MCP
+
+需要 Node.js 20.9 或更高版本，以及支持本地 stdio MCP 的客户端。采用 `mcpServers` JSON 配置的客户端可填写：
+
+```json
+{
+  "mcpServers": {
+    "smart-drawio": {
+      "command": "npx",
+      "args": ["-y", "@yunshenwuchuxun/smart-drawio-mcp@0.1.0"]
+    }
+  }
+}
+```
+
+客户端负责启动进程并通过 stdin/stdout 通信。使用生成工具时，在 MCP 进程环境中配置 `SMART_DRAWIO_PROVIDER`、`SMART_DRAWIO_BASE_URL`、`SMART_DRAWIO_API_KEY` 和 `SMART_DRAWIO_MODEL`，连接自己的 OpenAI / Anthropic 兼容接口。
+
+| 工具 | 功能 | 是否需要模型 API |
+| --- | --- | --- |
+| `generate_drawio` | 根据文本生成完整且通过校验的 XML | 是 |
+| `validate_drawio` | 检查 XML 语法、ID、父节点及引用 | 否 |
+| `repair_drawio` | 保守修复支持的缺失闭合标签 | 否 |
+| `style_drawio` | 应用主题、风格套装、预设和绘图技巧 | 否 |
+| `list_drawio_options` | 查询支持的图表类型、主题和工具选项 | 否 |
+
+MCP 返回未压缩 XML，由客户端保存文件。PNG / SVG / PDF 预览或导出需要可用的 Draw.io 渲染器或编辑器。0.1.0 提供本地 stdio 工具；Registry 链接是安装元数据，Vercel 地址是网页入口。当前包没有远程 HTTP MCP 地址或实时画布会话控制。
+
+### 实际生成示例
+
+下图均通过官方 Draw.io 查看器真实渲染，并提供可编辑源文件：
+
+| Skill 工作流 | MCP 生成工作流 |
+| --- | --- |
+| ![Skill 创建的 Transformer](docs/images/transformer-skill.png) | ![MCP 创建的 Transformer](docs/images/transformer-mcp.png) |
+| [可编辑 .drawio](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/download/tools-v0.1.0/transformer-skill.drawio) | [可编辑 .drawio](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/download/tools-v0.1.0/transformer-mcp.drawio) |
+
+Skill 示例使用助手自身模型生成；MCP 示例通过真实 OpenAI 兼容 API 请求 `codex/gpt-6.1-sol`，再进行 MCP 校验和 Draw.io 渲染。MCP 原始输出有一处说明文字被连线穿过，示例保留实际生成效果。
+
+[发布版本 CI](https://github.com/yunshenwuchuxun/smart-drawio-next/actions/runs/38578657214) 已通过 291 个 JavaScript 测试、11 个 Python 测试、8 个浏览器测试，以及 lint、生产构建和独立包安装验证。公开 Skill 安装及 npm MCP 的握手和工具调用也已验证。
 
 详见 [MCP 配置](packages/mcp/README.md)、[Skill 安装](docs/skill-installation.md)和[版本下载](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0)。网页仍可独立部署到 Vercel。
 
@@ -303,16 +357,9 @@ docker compose ps
 
 ## 模型推荐
 
-推荐优先使用 **Claude 系列模型**，尤其适合：
+项目支持 OpenAI / Anthropic 兼容接口，使用提供商实际开放的模型 ID。文本绘图需要稳定的结构化输出能力，参考图片生成需要模型支持图片输入。
 
-- 科研图表生成
-- 架构图与流程图生成
-- 长文本约束下的结构化输出
-- 需要更稳定 XML / Draw.io 代码生成的场景
-
-如果你更关注复杂结构理解、文本布局一致性和长输出稳定性，Claude 系列通常会更合适。
-
-当然，项目同样兼容 OpenAI / Anthropic 风格的接口，你也可以根据自己的成本、速度和可用性自由切换。
+0.1.0 已通过兼容网关请求 `codex/gpt-6.1-sol` 生成 Transformer 架构图；这是一次具体场景的验证结果。复杂图表可能耗时数分钟，实际效果和速度取决于模型、提示词与提供商配置。
 
 ## LLM 配置
 
@@ -325,7 +372,7 @@ docker compose ps
 - API Key
 - Model
 
-所有配置仅保存在浏览器 localStorage 中。
+保存的配置持久化在浏览器 localStorage 中。生成时，当前模型配置和输入会发送到应用的 API 路由，再由服务端调用选定的模型提供商。
 
 ### 工作区恢复与请求限制
 
@@ -339,9 +386,9 @@ XML 在浏览器和 Node.js 中采用同一校验规则，逐页检查语法、�
 
 ## 常见问题
 
-### API Key 会上传到第三方吗？
+### API Key 会发送到哪里？
 
-不会。前端本地配置仅保存在浏览器中，请求会先发送到你自己的服务端，再由服务端请求外部模型接口。
+保存的配置位于本地浏览器。每次生成会将当前配置（包含 API Key）发送到应用服务端，服务端用该密钥向你选定的模型提供商认证。MCP 生成使用进程环境中配置的密钥；Skill 可以使用助手自身模型创建 XML，无需额外配置绘图生成 API。
 
 ### 生成内容被截断怎么办？
 

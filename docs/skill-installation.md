@@ -10,6 +10,8 @@ Skill 本体位于 `skills/smart-drawio/`，可以独立复制，不需要仓库
 npx skills add https://github.com/yunshenwuchuxun/smart-drawio-next/tree/tools-v0.1.0/skills/smart-drawio
 ```
 
+Skill 以 GitHub 文件包分发，没有独立 npm 包，也未包含在 MCP npm 包中。上面的 `npx skills` 启动通用 Skills CLI 安装器，再从固定 GitHub 标签下载本 Skill。
+
 也可从 [GitHub Release](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0) 下载 `smart-drawio-skill-0.1.0.zip`，解压后按下面步骤复制安装。选择目标 Agent 的安装范围；本项目不自动更改全局配置。
 
 1. 把整个 `skills/smart-drawio` 目录放入目标 Agent 客户端支持的技能目录；保留 `SKILL.md`、`agents/`、`references/`、`assets/` 和 `scripts/` 的相对位置。
