@@ -4,6 +4,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { useXmlHistory } from '@/lib/hooks/use-xml-history';
 
 describe('useXmlHistory', () => {
+  it('can undo the first diagram back to an empty workspace', () => {
+    const onApplyXml = vi.fn();
+    const { result } = renderHook(() => useXmlHistory({ onApplyXml }));
+    act(() => {
+      result.current.pushToHistory('');
+      result.current.pushToHistory('first diagram');
+      result.current.handleUndo();
+    });
+    expect(onApplyXml).toHaveBeenLastCalledWith('');
+    act(() => { result.current.handleRedo(); });
+    expect(onApplyXml).toHaveBeenLastCalledWith('first diagram');
+  });
   it('pushes snapshots and supports undo/redo', () => {
     const onApplyXml = vi.fn();
     const { result } = renderHook(() => useXmlHistory({ onApplyXml }));

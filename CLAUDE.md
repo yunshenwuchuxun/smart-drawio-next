@@ -33,9 +33,17 @@ pnpm test:ui                    # Run tests with Vitest UI
 pnpm test:e2e                   # Run E2E tests (Playwright, needs dev server)
 ```
 
-**Requirements**: Node.js >= 18.18, pnpm
+**Requirements**: Node.js >= 20.9 (Node.js 24 LTS recommended), pnpm
 
 ## Architecture
+
+### Shared Core and Agent Tools
+
+`packages/core/src` owns the reusable XML, theme, layout, validation, prompt and provider implementations. Original `lib` paths re-export the same implementation for website compatibility. Core modules use explicit relative `.js` imports and `xml-runtime.js` helpers instead of Next.js aliases or browser globals; do not install DOM objects on the Node global.
+
+`packages/mcp/src` adapts the core to five local stdio tools. `scripts/build-mcp.mjs` bundles internal core code, while runtime dependencies are declared in `packages/mcp/package.json`. `pnpm verify:mcp` installs the actual tarball outside this repository and checks protocol behavior. The root website package remains private.
+
+`skills/smart-drawio` is independently installable; its Python validator uses the standard library. Run `pnpm test:skill` to check its isolated operation. `pnpm pack:tools` prepares local npm/Skill release artifacts without publishing them.
 
 ### Core Generation Flow
 
@@ -54,13 +62,16 @@ User Input (Chat.jsx)
 
 ### State Management
 
-All application state lives in `app/page.js` and flows down as props. No global state library. Complex logic is extracted into three custom hooks:
+All application state lives in `app/page.js` and flows down as props. No global state library. Complex logic is extracted into four custom hooks:
 
 | Hook | Location | Purpose |
 |------|----------|---------|
 | `useGenerationWorkflow` | `lib/hooks/use-generation-workflow.js` | Generation lifecycle: streaming, continuation, optimization, error handling, blueprint phases |
 | `useToolsPanel` | `lib/hooks/use-tools-panel.js` | Style preset toggles, drawing tricks, text tools, style packs |
 | `useXmlHistory` | `lib/hooks/use-xml-history.js` | Undo/redo stack for XML snapshots (max 20 entries) |
+| `useWorkspacePersistence` | `lib/hooks/use-workspace-persistence.js` | Restore and autosave applied XML, unapplied code and unsent input |
+
+Applied diagram changes go through `useGenerationWorkflow.commitDocument`. Canvas echoes must be idempotent, and tools/undo must preserve an unapplied code draft. Incomplete or failed model output must not replace the last valid diagram.
 
 Pattern for adding new state: add to `app/page.js`, pass handlers/state as props, use `useEffect` for localStorage sync.
 
@@ -95,6 +106,7 @@ Uses `lib/storage.js` wrapper with in-memory Map fallback for SSR/privacy mode. 
 | `smart-drawio-style-presets` | Active style presets |
 | `smart-drawio-theme-mode` | UI theme (light/dark/system) |
 | `smart-drawio-active-panel` | Currently open sidebar panel |
+| `smart-drawio-autosave` | Applied XML, code draft, input, theme and presets; excludes credentials and images |
 
 Legacy keys (`smart-excalidraw-*`) are auto-migrated on first load via `ensureMigration()`.
 
@@ -149,14 +161,10 @@ The generate route uses `lib/rate-limiter.js` for IP-based throttling and `lib/g
 
 ## Environment Variables
 
-Optional server-side LLM config (`.env`):
+LLM credentials are configured in the browser. `ACCESS_PASSWORD` and `SERVER_LLM_*` are not implemented server-side options. Optional local endpoint support for trusted self-hosting (`.env`):
 
 ```bash
-ACCESS_PASSWORD=your-secure-password
-SERVER_LLM_TYPE=openai
-SERVER_LLM_BASE_URL=https://api.openai.com/v1
-SERVER_LLM_API_KEY=sk-...
-SERVER_LLM_MODEL=gpt-4
+ALLOW_LOCAL_LLM_BASE_URLS=true
 ```
 
 ## Path Aliases

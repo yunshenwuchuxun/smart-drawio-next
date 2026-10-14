@@ -1,0 +1,15 @@
+Smart Drawio Next includes work derived from smart-excalidraw-next,
+maintained by liujuntao123 and its contributors:
+https://github.com/liujuntao123/smart-excalidraw-next
+
+The upstream README declares "MIT License" at the verified source commit:
+https://github.com/liujuntao123/smart-excalidraw-next/blob/fd139925b01ab34203510d6afa560aa56fcc3201/README.md#L158-L160
+The upstream tree at that commit does not contain a separate license file
+or a copyright notice. No upstream copyright year is inferred here.
+
+The MCP adapter and shared drawing core are maintained by Smart Drawio Next
+contributors:
+https://github.com/yunshenwuchuxun/smart-drawio-next
+
+This distribution includes the MIT license text in LICENSE and retains the
+upstream source and license declaration above.

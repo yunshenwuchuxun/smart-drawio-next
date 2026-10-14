@@ -33,7 +33,7 @@
 - Sync output directly into an embedded Draw.io canvas
 - Use post-processing tools to improve layout, connectors, styles, and annotations
 
-The project includes multi-model configuration, access-password mode, generation history, and notifications. It can be deployed as a personal tool or an internal team service.
+The project includes multi-model configuration, workspace recovery, generation history, and notifications. It can be deployed as a personal tool or an internal team service.
 
 ## Core Features
 
@@ -43,6 +43,20 @@ The project includes multi-model configuration, access-password mode, generation
 - **Post-processing toolchain** for structure, text, connector, and style refinement
 - **Multi-provider config management** for OpenAI / Anthropic-compatible APIs
 - **Local history** with replay support for recent generations
+
+## Agent Skill and MCP
+
+The Skill creates editable diagrams using the agent's own model. Install the versioned Skill with:
+
+```sh
+npx skills add https://github.com/yunshenwuchuxun/smart-drawio-next/tree/tools-v0.1.0/skills/smart-drawio
+```
+
+Invoke `$smart-drawio` to create or modify research diagrams, architecture diagrams and flowcharts. Its Python 3 validator works offline without third-party dependencies; MCP is optional.
+
+The local MCP server exposes `generate_drawio`, `validate_drawio`, `repair_drawio`, `style_drawio` and `list_drawio_options`. Use `npx -y @yunshenwuchuxun/smart-drawio-mcp@0.1.0` as the client's stdio command. Generation uses your configured OpenAI/Anthropic-compatible provider; the other tools need no model credentials.
+
+See [MCP setup](packages/mcp/README.md), [Skill installation](docs/skill-installation.md), and [version downloads](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0). The Next.js application remains independently deployable to Vercel.
 
 ## Supported Diagram Types
 
@@ -180,10 +194,23 @@ Used for batch text formatting:
 
 4. **Support Modals**
    - `ConfigManager`
-   - `AccessPasswordModal`
    - `HistoryModal`
    - `OptimizationPanel`
    - Other supporting panels
+
+## Developing the Tools
+
+The website and tools share the drawing core. To build and verify the packages from a source checkout:
+
+```bash
+pnpm build:mcp
+pnpm test:tools
+pnpm test:skill
+pnpm verify:mcp
+pnpm pack:tools
+```
+
+See [packaging and publication](./docs/publishing.md) for release checks. Publish only `packages/mcp`; the website's root package remains private.
 
 ## Tech Stack
 
@@ -198,7 +225,7 @@ Used for batch text formatting:
 
 ### Requirements
 
-- Node.js >= 18.18
+- Node.js >= 20.9 (Node.js 24 LTS recommended)
 - pnpm >= 8
 - An available OpenAI / Anthropic-compatible API key
 
@@ -240,22 +267,11 @@ Then open: <http://localhost:3000>
 
 The image uses a multi-stage build and Next.js standalone output for deployment-friendly packaging.
 
-### Optional Server-Side LLM Config
+### LLM Configuration
 
-If you want multiple users to share one server-side configuration, set these in `docker-compose.yml`:
-
-```yaml
-services:
-  app:
-    environment:
-      - ACCESS_PASSWORD=your-secure-password
-      - SERVER_LLM_TYPE=openai
-      - SERVER_LLM_BASE_URL=https://api.openai.com/v1
-      - SERVER_LLM_API_KEY=sk-xxx
-      - SERVER_LLM_MODEL=gpt-4
-```
-
-You can also use a `.env` file based on `.env.example`.
+Configure the provider, base URL, API key and model in the browser settings.
+The current release uses the user's configuration for each generation request.
+`ACCESS_PASSWORD` and `SERVER_LLM_*` are not implemented server-side configuration options.
 
 ### Proxy and Local Model Setup
 
@@ -299,25 +315,15 @@ By default, users configure these in the UI:
 
 All values are stored in browser localStorage only.
 
-### Server-Side Access Password Mode
+### Workspace Recovery and Request Limits
 
-If you want the API key to stay on the server:
+The applied diagram, unapplied code draft, text input, theme and presets are saved locally after changes and restored on reload. The header reports whether the draft was saved. Workspace snapshots exclude provider credentials and uploaded image data; images must be uploaded again after a reload.
 
-1. Copy the example file:
+Generation accepts requests up to 4 MiB and images up to 2 MiB to leave room for base64 encoding on Vercel. Model requests have a 240-second total deadline and a 60-second idle deadline. Stopping generation cancels pending retries and continuation requests as well as the upstream model request.
 
-```bash
-cp .env.example .env
-```
+XML validation runs in browsers and Node.js. Each uncompressed page is checked independently for malformed XML, duplicate IDs, invalid parent chains and missing references. Compressed `.drawio` pages are not supported in this phase. Truncated output stays in the editor; explicitly applying it can repair missing closing tags and reports any discarded tail.
 
-2. Set these variables:
-
-- `ACCESS_PASSWORD`
-- `SERVER_LLM_TYPE`
-- `SERVER_LLM_BASE_URL`
-- `SERVER_LLM_API_KEY`
-- `SERVER_LLM_MODEL`
-
-3. Restart the service, then users can enable the server-side config through the access password flow.
+Legacy JSON input rejects unsupported or invalid elements without replacing the current diagram or draft. Explicitly applying `[]` creates an empty diagram and can be undone.
 
 ## FAQ
 

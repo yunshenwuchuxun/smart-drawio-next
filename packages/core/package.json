@@ -1,0 +1,13 @@
+{
+  "name": "@smart-drawio/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.js",
+  "engines": { "node": ">=20.9" },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.12",
+    "saxes": "^6.0.0",
+    "zod": "^4.3.6"
+  }
+}

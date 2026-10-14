@@ -10,25 +10,35 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:mcp": "node scripts/build-mcp.mjs",
+    "verify:mcp": "node scripts/verify-mcp-package.mjs",
+    "test:tools": "vitest run tests/core tests/lib/mcp-server.test.js tests/lib/mcp-stdio.test.js",
+    "test:skill": "python3 -m unittest discover -s tests/skills",
+    "pack:tools": "node scripts/pack-tools.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "next": "^16.2.1",
+    "@xmldom/xmldom": "^0.9.12",
+    "next": "16.3.8",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "saxes": "^6.0.0",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/server": "2.3.1",
     "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@vitest/ui": "^4.0.18",
+    "esbuild": "^0.27.7",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.3.8",
     "jsdom": "^28.0.0",
     "tailwindcss": "^4",
     "vitest": "^4.0.18"

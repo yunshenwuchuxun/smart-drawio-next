@@ -7,7 +7,8 @@ import {
   createImageObject,
   getImagePreviewUrl,
   formatFileSize,
-  getFileExtension
+  getFileExtension,
+  MAX_IMAGE_SIZE,
 } from '@/lib/image-utils';
 import { CHART_TYPES } from '@/lib/constants';
 
@@ -176,7 +177,7 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
             </svg>
             <p className="text-sm text-gray-600 mb-1">上传图片进行识别</p>
             <p className="text-xs text-gray-400">
-              支持 JPG、PNG、WebP、GIF 格式，最大 5MB
+              支持 JPG、PNG、WebP、GIF 格式，最大 {MAX_IMAGE_SIZE / 1024 / 1024}MB
             </p>
           </div>
 

@@ -33,7 +33,7 @@
 - 将结果同步到内嵌 Draw.io 画布中继续可视化微调
 - 使用高级优化面板统一布局、线条、样式和注释
 
-项目内置多模型配置、访问密码、历史记录和通知系统，可直接部署为个人工具或团队内部服务。
+项目内置多模型配置、工作区恢复、历史记录和通知系统，可直接部署为个人工具或团队内部服务。
 
 ## 核心能力
 
@@ -44,6 +44,20 @@
 - **多配置管理**：支持 OpenAI / Anthropic 兼容接口，适合个人、多模型切换和内部部署场景
 - **本地历史记录**：最近 20 条生成结果可回放，方便对比不同提示词和版本效果
 - **适合科研与技术表达**：相较于纯图片生成，更适合输出可编辑、可复用、可继续维护的结构化图表
+
+## Skill 与 MCP
+
+Skill 使用助手自身模型创建可编辑图表。安装固定版本：
+
+```sh
+npx skills add https://github.com/yunshenwuchuxun/smart-drawio-next/tree/tools-v0.1.0/skills/smart-drawio
+```
+
+调用 `$smart-drawio` 创建或修改科研结构图、系统架构图和流程图。随包 Python 3 脚本可离线校验，不依赖第三方 Python 包；MCP 是可选增强。
+
+本地 MCP 提供 `generate_drawio`、`validate_drawio`、`repair_drawio`、`style_drawio` 和 `list_drawio_options`。客户端以 `npx -y @yunshenwuchuxun/smart-drawio-mcp@0.1.0` 启动 stdio 服务。生成工具需要配置模型 API，其余工具不需要模型密钥。
+
+详见 [MCP 配置](packages/mcp/README.md)、[Skill 安装](docs/skill-installation.md)和[版本下载](https://github.com/yunshenwuchuxun/smart-drawio-next/releases/tag/tools-v0.1.0)。网页仍可独立部署到 Vercel。
 
 ## 支持的图表类型
 
@@ -181,10 +195,23 @@
 
 4. **辅助弹窗**
    - `ConfigManager`
-   - `AccessPasswordModal`
    - `HistoryModal`
    - `OptimizationPanel`
    - 其他辅助面板
+
+## 工具开发
+
+网页与工具复用绘图核心。从源码构建和验证发布包：
+
+```bash
+pnpm build:mcp
+pnpm test:tools
+pnpm test:skill
+pnpm verify:mcp
+pnpm pack:tools
+```
+
+发布检查见[打包发布](./docs/publishing.md)。仅发布 `packages/mcp`，网站根包继续保持 private。
 
 ## 技术栈
 
@@ -199,7 +226,7 @@
 
 ### 环境要求
 
-- Node.js >= 18.18
+- Node.js >= 20.9（推荐 Node.js 24 LTS）
 - pnpm >= 8
 - 可用的 OpenAI / Anthropic 兼容 API Key
 
@@ -241,22 +268,9 @@ docker compose up -d --build
 
 镜像使用多阶段构建和 Next.js standalone 输出，适合直接部署。
 
-### 服务端 LLM 配置（可选）
+### 模型配置
 
-如果希望多个用户共享同一套服务端配置，可在 `docker-compose.yml` 中配置：
-
-```yaml
-services:
-  app:
-    environment:
-      - ACCESS_PASSWORD=your-secure-password
-      - SERVER_LLM_TYPE=openai
-      - SERVER_LLM_BASE_URL=https://api.openai.com/v1
-      - SERVER_LLM_API_KEY=sk-xxx
-      - SERVER_LLM_MODEL=gpt-4
-```
-
-也可以使用 `.env` 文件，参考 `.env.example`。
+在网页设置中配置提供商、Base URL、API Key 和模型。当前版本按请求使用用户配置，尚未实现 `ACCESS_PASSWORD` 或 `SERVER_LLM_*` 服务端托管配置。
 
 ### 代理与本地模型
 
@@ -313,25 +327,15 @@ docker compose ps
 
 所有配置仅保存在浏览器 localStorage 中。
 
-### 服务端访问密码模式
+### 工作区恢复与请求限制
 
-如果你想将 API Key 保留在服务器端：
+画布、未应用的代码草稿、文本输入、主题和预设会在变化后自动保存到本地，并在刷新时恢复。页头会显示保存状态。工作区快照不包含模型凭证或图片数据；刷新后需要重新上传图片。
 
-1. 复制配置文件：
+生成请求上限为 4 MiB，图片上限为 2 MiB，为 Vercel 上的 base64 编码预留空间。模型调用总超时为 240 秒、空闲超时为 60 秒。停止生成会取消上游模型请求，以及待执行的续写和重试。
 
-```bash
-cp .env.example .env
-```
+XML 在浏览器和 Node.js 中采用同一校验规则，逐页检查语法、重复 ID、父节点循环和悬空引用。本阶段支持未压缩页面，压缩 `.drawio` 页面会明确报错。截断输出保留在编辑器；用户显式应用时可修复闭合标签，丢弃不完整尾部时会提示。
 
-2. 设置以下变量：
-
-- `ACCESS_PASSWORD`
-- `SERVER_LLM_TYPE`
-- `SERVER_LLM_BASE_URL`
-- `SERVER_LLM_API_KEY`
-- `SERVER_LLM_MODEL`
-
-3. 重启服务后，用户可通过“访问密码”启用服务端配置。
+兼容的 JSON 输入遇到未知或不合法元素时会报错，并保留原图与草稿。显式应用空数组 `[]` 表示创建空图，仍可撤销恢复。
 
 ## 常见问题
 

@@ -5,6 +5,7 @@ export default function TopBar({
   modelStatus = 'connected',
   onHistoryClick,
   onSettingsClick,
+  saveStatus = 'ready',
 }) {
   return (
     <div
@@ -52,6 +53,14 @@ export default function TopBar({
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
         {/* GitHub */}
+        <span
+          role="status"
+          className={`text-xs ${['unsaved', 'recovery-error'].includes(saveStatus) ? '' : 'hidden sm:inline'}`}
+          style={{ color: ['unsaved', 'recovery-error'].includes(saveStatus) ? 'var(--color-error)' : 'var(--color-text-tertiary)' }}
+        >
+          {{ loading: '正在恢复草稿', ready: '自动保存已启用', saved: '草稿已保存',
+            unsaved: '草稿未保存，请保留此页面', 'recovery-error': '草稿恢复失败，请检查本地数据' }[saveStatus]}
+        </span>
         <a
           href="https://github.com/yunshenwuchuxun/smart-drawio-next"
           target="_blank"

@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { installEditorFixtures } from './editor-fixtures';
+
+test.beforeEach(async ({ page }) => installEditorFixtures(page));
 
 test.describe('Smart Drawio Next', () => {
   test('homepage loads correctly', async ({ page }) => {
@@ -14,6 +17,7 @@ test.describe('Smart Drawio Next', () => {
 
   test('code editor panel is visible', async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('tab', { name: 'CODE' }).click();
     const editorPanel = page.locator('.monaco-editor').first();
     await expect(editorPanel).toBeVisible({ timeout: 10000 });
   });

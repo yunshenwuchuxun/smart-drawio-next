@@ -1,0 +1,4 @@
+interface:
+  display_name: "Smart Drawio"
+  short_description: "生成、修改和交付可编辑的科研、架构及流程 Draw.io 图表"
+  default_prompt: "请使用 $smart-drawio 根据我的需求创建或修改图表，校验并交付可编辑的 .drawio 文件。"

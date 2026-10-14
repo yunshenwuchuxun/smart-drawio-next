@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yunshenwuchuxun/smart-drawio",
+  "title": "Smart Drawio",
+  "description": "Generate, validate, repair and style editable draw.io XML diagrams.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/yunshenwuchuxun/smart-drawio-next",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "packages": [{
+    "registryType": "npm",
+    "identifier": "@yunshenwuchuxun/smart-drawio-mcp",
+    "version": "0.1.0",
+    "transport": { "type": "stdio" },
+    "environmentVariables": [
+      { "name": "SMART_DRAWIO_PROVIDER", "description": "openai or anthropic; required only for model generation" },
+      { "name": "SMART_DRAWIO_BASE_URL", "description": "Model provider HTTP(S) base URL; required only for model generation" },
+      { "name": "SMART_DRAWIO_API_KEY", "description": "Your model provider API key; required only for model generation", "isSecret": true },
+      { "name": "SMART_DRAWIO_MODEL", "description": "Model identifier; required only for model generation" }
+    ]
+  }]
+}

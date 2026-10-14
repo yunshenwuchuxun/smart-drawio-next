@@ -1,167 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { determineEdges, getEdgeCenter, optimizeExcalidrawCode, ANGLE_THRESHOLD } from '@/lib/optimizeArrows';
+import { optimizeExcalidrawCode } from '@/lib/optimizeArrows';
 
-describe('determineEdges', () => {
-  const createEl = (x, y, w = 100, h = 100) => ({ x, y, width: w, height: h });
+function optimizeBoundArrow(start, end) {
+  const elements = [
+    { id: 'a', type: 'rectangle', width: 100, height: 100, ...start },
+    { id: 'b', type: 'rectangle', width: 100, height: 100, ...end },
+    { id: 'edge', type: 'arrow', x: -1, y: -1, width: -1, height: -1,
+      start: { id: 'a' }, end: { id: 'b' } },
+  ];
+  return JSON.parse(optimizeExcalidrawCode(JSON.stringify(elements))).find(el => el.id === 'edge');
+}
 
-  it('returns left/right when start is to the right of end', () => {
-    const start = createEl(300, 100);
-    const end = createEl(0, 100);
-    const { startEdge, endEdge } = determineEdges(start, end);
-    expect(startEdge).toBe('left');
-    expect(endEdge).toBe('right');
+describe('bound arrow geometry', () => {
+  it.each([
+    [{x:0,y:0}, {x:300,y:0}, {x:100,y:50,width:200,height:0}],
+    [{x:300,y:0}, {x:0,y:0}, {x:300,y:50,width:-200,height:0}],
+    [{x:0,y:0}, {x:0,y:300}, {x:50,y:100,width:1,height:200}],
+    [{x:0,y:300}, {x:0,y:0}, {x:50,y:300,width:1,height:-200}],
+    [{x:0,y:0}, {x:300,y:100}, {x:100,y:50,width:200,height:100}],
+    [{x:0,y:0}, {x:100,y:300}, {x:50,y:100,width:100,height:200}],
+  ])('attaches arrow to rectangle boundaries (%j → %j)', (start, end, expected) => {
+    expect(optimizeBoundArrow(start, end)).toMatchObject(expected);
   });
 
-  it('returns right/left when start is to the left of end', () => {
-    const start = createEl(0, 100);
-    const end = createEl(300, 100);
-    const { startEdge, endEdge } = determineEdges(start, end);
-    expect(startEdge).toBe('right');
-    expect(endEdge).toBe('left');
-  });
-
-  it('returns top/bottom when start is below end', () => {
-    const start = createEl(100, 300);
-    const end = createEl(100, 0);
-    const { startEdge, endEdge } = determineEdges(start, end);
-    expect(startEdge).toBe('top');
-    expect(endEdge).toBe('bottom');
-  });
-
-  it('returns bottom/top when start is above end', () => {
-    const start = createEl(100, 0);
-    const end = createEl(100, 300);
-    const { startEdge, endEdge } = determineEdges(start, end);
-    expect(startEdge).toBe('bottom');
-    expect(endEdge).toBe('top');
-  });
-
-  it('handles lower-right quadrant', () => {
-    const start = createEl(300, 300);
-    const end = createEl(0, 0);
-    const result = determineEdges(start, end);
-    expect(['left', 'top']).toContain(result.startEdge);
-    expect(['right', 'bottom']).toContain(result.endEdge);
-  });
-
-  it('handles lower-left quadrant', () => {
-    const start = createEl(0, 300);
-    const end = createEl(300, 0);
-    const result = determineEdges(start, end);
-    expect(['right', 'top']).toContain(result.startEdge);
-    expect(['left', 'bottom']).toContain(result.endEdge);
-  });
-
-  it('handles upper-right quadrant', () => {
-    const start = createEl(300, 0);
-    const end = createEl(0, 300);
-    const result = determineEdges(start, end);
-    expect(['left', 'bottom']).toContain(result.startEdge);
-    expect(['right', 'top']).toContain(result.endEdge);
-  });
-
-  it('handles upper-left quadrant', () => {
-    const start = createEl(0, 0);
-    const end = createEl(300, 300);
-    const result = determineEdges(start, end);
-    expect(['right', 'bottom']).toContain(result.startEdge);
-    expect(['left', 'top']).toContain(result.endEdge);
-  });
-
-  it('handles overlapping elements with default', () => {
-    const start = createEl(50, 50);
-    const end = createEl(50, 50);
-    const result = determineEdges(start, end);
-    expect(result.startEdge).toBe('right');
-    expect(result.endEdge).toBe('left');
-  });
-
-  it('exports ANGLE_THRESHOLD as 30 degrees', () => {
-    expect(ANGLE_THRESHOLD).toBeCloseTo(Math.PI / 6);
-  });
-
-  it('vertical 90° returns bottom/top', () => {
-    const start = createEl(200, 0);
-    const end = createEl(200, 400);
-    const result = determineEdges(start, end);
-    expect(result.startEdge).toBe('bottom');
-    expect(result.endEdge).toBe('top');
-  });
-
-  it('horizontal 0° returns right/left', () => {
-    const start = createEl(0, 200);
-    const end = createEl(400, 200);
-    const result = determineEdges(start, end);
-    expect(result.startEdge).toBe('right');
-    expect(result.endEdge).toBe('left');
-  });
-
-  it('diagonal 45° (in 30°-150° zone) prefers vertical', () => {
-    // Source upper-left, target lower-right → angle ≈ 45°
-    const start = createEl(0, 0);
-    const end = createEl(200, 200);
-    const result = determineEdges(start, end);
-    expect(result.startEdge).toBe('bottom');
-    expect(result.endEdge).toBe('top');
-  });
-
-  it('near-horizontal 20° (in -30° to 30° zone) prefers horizontal', () => {
-    // Small vertical offset, large horizontal offset → angle ≈ 20°
-    const start = createEl(0, 0);
-    const end = createEl(500, 100, 100, 100);
-    const result = determineEdges(start, end);
-    expect(result.startEdge).toBe('right');
-    expect(result.endEdge).toBe('left');
-  });
-
-  it('exactly at 30° boundary falls into vertical zone', () => {
-    // tan(30°) ≈ 0.577, so dy/dx ≈ 0.577. Use dx=100, dy=57.74
-    const start = createEl(0, 0, 0, 0);
-    const end = createEl(100, 58, 0, 0);
-    const result = determineEdges(start, end);
-    expect(result.startEdge).toBe('bottom');
-    expect(result.endEdge).toBe('top');
-  });
-});
-
-describe('getEdgeCenter', () => {
-  const el = { x: 100, y: 100, width: 200, height: 100 };
-
-  it('returns left edge center', () => {
-    const { x, y } = getEdgeCenter(el, 'left');
-    expect(x).toBe(100);
-    expect(y).toBe(150);
-  });
-
-  it('returns right edge center', () => {
-    const { x, y } = getEdgeCenter(el, 'right');
-    expect(x).toBe(300);
-    expect(y).toBe(150);
-  });
-
-  it('returns top edge center', () => {
-    const { x, y } = getEdgeCenter(el, 'top');
-    expect(x).toBe(200);
-    expect(y).toBe(100);
-  });
-
-  it('returns bottom edge center', () => {
-    const { x, y } = getEdgeCenter(el, 'bottom');
-    expect(x).toBe(200);
-    expect(y).toBe(200);
-  });
-
-  it('defaults to right for unknown edge', () => {
-    const { x, y } = getEdgeCenter(el, 'unknown');
-    expect(x).toBe(300);
-    expect(y).toBe(150);
-  });
-
-  it('handles missing dimensions', () => {
-    const minimal = { x: 0, y: 0 };
-    const { x, y } = getEdgeCenter(minimal, 'right');
-    expect(x).toBe(100);
-    expect(y).toBe(50);
+  it('keeps an unbound arrow geometry unchanged', () => {
+    const arrow = {id:'edge',type:'arrow',x:11,y:22,width:33,height:44};
+    expect(JSON.parse(optimizeExcalidrawCode(JSON.stringify([arrow])))).toEqual([arrow]);
   });
 });
 

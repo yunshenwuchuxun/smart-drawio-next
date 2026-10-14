@@ -31,10 +31,10 @@
 - [x] 4.2 修改 handleMessage 处理 save 事件：调用 onXmlChange
 - [x] 4.3 添加 origin 验证逻辑：检查 event.origin
 - [x] 4.4 在 app/page.js 实现 handleDrawioXmlChange 回调
-- [x] 4.5 实现 handleExportPng 函数：发送 export 消息
-- [x] 4.6 实现 handleExportSvg 函数：发送 export 消息
-- [x] 4.7 处理 export 事件：创建 Blob 并触发下载
-- [x] 4.8 在 CodeEditor 添加导出按钮 UI
+- [ ] 4.5 实现 handleExportPng 函数：发送 export 消息（2026-10-14 对账：当前调用链缺失）
+- [ ] 4.6 实现 handleExportSvg 函数：发送 export 消息
+- [ ] 4.7 处理 export 事件：创建 Blob 并触发下载
+- [ ] 4.8 在 CodeEditor 添加导出按钮 UI
 
 ## 5. Phase 2: 核心功能 - 性能优化
 

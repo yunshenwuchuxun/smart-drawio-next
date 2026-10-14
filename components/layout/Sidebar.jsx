@@ -16,9 +16,14 @@ export default function Sidebar({
   const sidebarRef = useRef(null);
 
   useEffect(() => {
-    const persistedCollapsed = storage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true';
-    setCollapsed(persistedCollapsed);
-    onCollapseChange?.(persistedCollapsed);
+    let disposed = false;
+    queueMicrotask(() => {
+      if (disposed) return;
+      const persistedCollapsed = storage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true';
+      setCollapsed(persistedCollapsed);
+      onCollapseChange?.(persistedCollapsed);
+    });
+    return () => { disposed = true; };
   }, [onCollapseChange]);
 
   // Handle responsive breakpoints

@@ -45,6 +45,40 @@ describe('applyStylePack', () => {
     expect(getStyle(result.xml, '3').edgeStyle).toBeUndefined();
   });
 
+  it.each(['researchClean', 'presentationCards'])('keeps shape labels wrapped and widthless edge labels horizontal for %s', (packId) => {
+    const wrapped = SAMPLE_XML.replace('strokeColor=#2C3E50;curved=1;', 'strokeColor=#2C3E50;whiteSpace=wrap;curved=1;');
+    const result = applyStylePack(wrapped, packId);
+
+    expect(result.error).toBeNull();
+    expect(getStyle(result.xml, '2').whiteSpace).toBe('wrap');
+    expect(getStyle(result.xml, '3').whiteSpace).toBe('nowrap');
+    expect(getStyle(result.xml, '3').html).toBe('1');
+    const doc = new DOMParser().parseFromString(result.xml, 'text/xml');
+    expect(doc.querySelector('mxCell[id="3"]').getAttribute('value')).toBe('Edge label');
+    expect(doc.querySelector('mxCell[id="3"] mxGeometry').hasAttribute('width')).toBe(false);
+  });
+
+  it.each(['researchClean', 'presentationCards'])('preserves bounded edge label wrapping and uses a filled registered arrow for %s', (packId) => {
+    const bounded = SAMPLE_XML.replace('strokeColor=#2C3E50;curved=1;', 'strokeColor=#2C3E50;labelWidth=160;whiteSpace=wrap;endArrow=classicBlock;endFill=0;curved=1;');
+    const result = applyStylePack(bounded, packId);
+    const edgeStyle = getStyle(result.xml, '3');
+
+    expect(result.error).toBeNull();
+    expect(edgeStyle.whiteSpace).toBe('wrap');
+    expect(edgeStyle.labelWidth).toBe('160');
+    expect(edgeStyle.endArrow).toBe('block');
+    expect(edgeStyle.endFill).toBe('1');
+  });
+
+  it.each(['0', '-1', 'NaN', 'none'])('does not wrap edge labels with unusable explicit labelWidth=%s', (labelWidth) => {
+    const input = SAMPLE_XML.replace('strokeColor=#2C3E50;curved=1;', `strokeColor=#2C3E50;labelWidth=${labelWidth};whiteSpace=wrap;curved=1;`);
+    for (const packId of ['researchClean', 'presentationCards']) {
+      const result = applyStylePack(input, packId);
+      expect(result.error).toBeNull();
+      expect(getStyle(result.xml, '3').whiteSpace).toBe('nowrap');
+    }
+  });
+
   it('applies wireframe pack', () => {
     const result = applyStylePack(SAMPLE_XML, 'wireframe');
 

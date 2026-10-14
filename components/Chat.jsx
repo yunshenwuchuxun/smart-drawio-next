@@ -23,10 +23,18 @@ export default function Chat({
   theme = 'research',
   onThemeChange,
   onStop,
+  inputValue,
+  chartTypeValue,
+  onInputChange,
+  onChartTypeChange,
 }) {
   const [activeTab, setActiveTab] = useState('text');
-  const [input, setInput] = useState(initialInput);
-  const [chartType, setChartType] = useState(initialChartType);
+  const [localInput, setLocalInput] = useState(initialInput);
+  const [localChartType, setLocalChartType] = useState(initialChartType);
+  const input = inputValue ?? localInput;
+  const chartType = chartTypeValue ?? localChartType;
+  const setInput = onInputChange ?? setLocalInput;
+  const setChartType = onChartTypeChange ?? setLocalChartType;
   const [fileState, setFileState] = useState(createEmptyFileState);
   const [selectedImage, setSelectedImage] = useState(null);
   const textareaRef = useRef(null);
@@ -34,12 +42,14 @@ export default function Chat({
   const themes = useMemo(() => getAllThemes(), []);
 
   useEffect(() => {
-    setInput(initialInput);
-  }, [initialInput]);
+    if (inputValue !== undefined) return;
+    queueMicrotask(() => setLocalInput(initialInput));
+  }, [initialInput, inputValue]);
 
   useEffect(() => {
-    setChartType(initialChartType);
-  }, [initialChartType]);
+    if (chartTypeValue !== undefined) return;
+    queueMicrotask(() => setLocalChartType(initialChartType));
+  }, [initialChartType, chartTypeValue]);
 
   const handleSubmit = (event) => {
     event.preventDefault();

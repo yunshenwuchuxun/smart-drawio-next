@@ -31,6 +31,15 @@ describe('prompts', () => {
     expect(prompt).toContain('流程图');
   });
 
+  it('uses registered draw.io triangle markers in research instructions and XML examples', () => {
+    const prompt = buildSystemPrompt('research');
+    const markers = [...prompt.matchAll(/endArrow=([A-Za-z]+)/g)].map((match) => match[1]);
+
+    expect(markers.length).toBeGreaterThan(0);
+    expect(markers.every((marker) => marker === 'block')).toBe(true);
+    expect(prompt).not.toContain('classicBlock');
+  });
+
   it('creates optimization prompts from suggestions', () => {
     const prompt = createOptimizationPrompt('<mxfile />', ['统一间距', '减少连线交叉']);
 

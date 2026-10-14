@@ -15,6 +15,7 @@ import { debounce } from '@/lib/debounce';
 import { useGenerationWorkflow } from '@/lib/hooks/use-generation-workflow';
 import { useToolsPanel } from '@/lib/hooks/use-tools-panel';
 import { useXmlHistory } from '@/lib/hooks/use-xml-history';
+import { useWorkspacePersistence } from '@/lib/hooks/use-workspace-persistence';
 import { STORAGE_KEYS, ensureMigration, storage } from '@/lib/storage';
 import { DEFAULT_THEME_ID } from '@/lib/themes';
 import { getPresetDefaults, stylePacks, stylePresets, textStyleTools, tricks } from '@/lib/tool-registry';
@@ -31,10 +32,7 @@ const INITIAL_NOTIFICATION = {
 };
 
 const VALID_PANELS = new Set(['input', 'code', 'tools']);
-const EMPTY_GENERATION_SETTERS = {
-  setGeneratedXml: () => {},
-  setGeneratedCode: () => {},
-};
+const EMPTY_GENERATION_SETTERS = { commitDocument: () => ({ ok: false }) };
 
 export default function Home() {
   const [config, setConfig] = useState(null);
@@ -44,8 +42,9 @@ export default function Home() {
   const [notification, setNotification] = useState(INITIAL_NOTIFICATION);
   const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME_ID);
   const [presets, setPresets] = useState(getPresetDefaults(DEFAULT_THEME_ID));
+  const [inputDraft, setInputDraft] = useState('');
+  const [inputChartType, setInputChartType] = useState('auto');
   const generationStateRef = useRef(EMPTY_GENERATION_SETTERS);
-  const suppressXmlChangeRef = useRef(false);
 
   const debouncedSavePresets = useMemo(
     () => debounce((nextPresets) => {
@@ -151,9 +150,7 @@ export default function Home() {
   }, []);
 
   const applyXmlSnapshot = useCallback((xml) => {
-    suppressXmlChangeRef.current = true;
-    generationStateRef.current.setGeneratedXml(xml);
-    generationStateRef.current.setGeneratedCode(xml);
+    generationStateRef.current.commitDocument(xml, { source: 'undo-redo', recordHistory: false });
   }, []);
 
   const {
@@ -166,7 +163,6 @@ export default function Home() {
     config,
     currentTheme,
     pushToHistory,
-    suppressXmlChangeRef,
     onNotify: showNotification,
     onRequireConfig: handleRequireConfig,
     onShowCodePanel: showCodePanel,
@@ -174,10 +170,41 @@ export default function Home() {
 
   useEffect(() => {
     generationStateRef.current = {
-      setGeneratedXml: generation.setGeneratedXml,
-      setGeneratedCode: generation.setGeneratedCode,
+      commitDocument: generation.commitDocument,
     };
-  }, [generation.setGeneratedCode, generation.setGeneratedXml]);
+  }, [generation.commitDocument]);
+
+  const restoreGenerationWorkspace = generation.restoreWorkspace;
+  const applyGenerationHistory = generation.handleApplyHistory;
+  const restoreWorkspace = useCallback((snapshot) => {
+    const restored = restoreGenerationWorkspace(snapshot);
+    if (restored.ok) {
+      setCurrentTheme(snapshot.theme);
+      setPresets({ ...getPresetDefaults(snapshot.theme), ...snapshot.presets });
+      setInputDraft(snapshot.inputDraft);
+      setInputChartType(snapshot.inputChartType);
+    }
+    return restored;
+  }, [restoreGenerationWorkspace]);
+
+  const workspace = useMemo(() => ({
+    generatedXml: generation.generatedXml,
+    generatedCode: generation.generatedCode,
+    currentInput: generation.currentInput,
+    currentChartType: generation.currentChartType,
+    inputDraft,
+    inputChartType,
+    theme: currentTheme,
+    presets,
+  }), [generation.generatedXml, generation.generatedCode, generation.currentInput,
+    generation.currentChartType, inputDraft, inputChartType, currentTheme, presets]);
+  const workspacePersistence = useWorkspacePersistence({ workspace, onRestore: restoreWorkspace });
+
+  const handleApplyHistoryEntry = useCallback((entry) => {
+    applyGenerationHistory(entry);
+    setInputDraft(typeof entry.userInput === 'string' ? entry.userInput : entry.userInput?.text || '');
+    setInputChartType(entry.chartType || 'auto');
+  }, [applyGenerationHistory]);
 
   const {
     handlePresetToggle,
@@ -188,9 +215,7 @@ export default function Home() {
     generatedXml: generation.generatedXml,
     presets,
     setPresets,
-    pushToHistory,
-    setGeneratedXml: generation.setGeneratedXml,
-    setGeneratedCode: generation.setGeneratedCode,
+    commitDocument: generation.commitDocument,
     setNotification,
     debouncedSavePresets,
   });
@@ -237,6 +262,7 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen" style={{ background: 'var(--color-bg-app)' }}>
       <TopBar
+        saveStatus={workspacePersistence.status}
         modelName={config ? `${config.name || config.type} - ${config.model}` : null}
         modelStatus={config && isConfigValid(config) ? 'connected' : 'disconnected'}
         onHistoryClick={() => setIsHistoryModalOpen(true)}
@@ -254,6 +280,10 @@ export default function Home() {
             currentChartType: generation.currentChartType,
             currentInput: generation.currentInput,
             currentTheme,
+            inputDraft,
+            inputChartType,
+            onInputChange: setInputDraft,
+            onChartTypeChange: setInputChartType,
             isGenerating: generation.isGenerating,
             onSendMessage: generation.handleSendMessage,
             onStop: generation.handleStopGeneration,
@@ -313,7 +343,7 @@ export default function Home() {
       <HistoryModal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
-        onApply={generation.handleApplyHistory}
+        onApply={handleApplyHistoryEntry}
       />
 
       <OptimizationPanel

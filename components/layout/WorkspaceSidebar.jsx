@@ -68,6 +68,10 @@ export default function WorkspaceSidebar({
             isGenerating={chatPanel.isGenerating}
             initialInput={chatPanel.currentInput}
             initialChartType={chatPanel.currentChartType}
+            inputValue={chatPanel.inputDraft}
+            chartTypeValue={chatPanel.inputChartType}
+            onInputChange={chatPanel.onInputChange}
+            onChartTypeChange={chatPanel.onChartTypeChange}
             theme={chatPanel.currentTheme}
             onThemeChange={chatPanel.onThemeChange}
             onStop={chatPanel.onStop}

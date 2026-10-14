@@ -5,13 +5,18 @@ import {
   createGenerateEventStream,
   createVisionModelError,
   isImageInput,
+  readGeneratePayload,
   SSE_HEADERS,
   supportsVisionModel,
   validateGeneratePayload,
 } from '@/lib/generate-route-utils';
-import { callLLM } from '@/lib/llm-client';
+import { callLLM, publicLlmError } from '@/lib/llm-client';
+import { GeneratePayloadSchema } from '@/lib/schemas';
 import { debug, error as logError } from '@/lib/logger';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limiter';
+
+export const runtime = 'nodejs';
+export const maxDuration = 300;
 
 /**
  * POST /api/generate
@@ -26,14 +31,14 @@ export async function POST(request) {
   }
 
   try {
-    const payload = await request.json();
+    const payload = await readGeneratePayload(request);
     const validationError = validateGeneratePayload(payload);
 
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const { config, userInput, chartType, isContinuation, theme } = payload;
+    const { config, userInput, chartType, isContinuation, theme } = GeneratePayloadSchema.parse(payload);
     const hasImageInput = isImageInput(userInput);
 
     debug('[generate] incoming payload', {
@@ -71,6 +76,7 @@ export async function POST(request) {
       callLLM,
       config,
       messages,
+      signal: request.signal,
       onStreamError: (error) => {
         logError('Error in generate stream:', error);
       },
@@ -78,10 +84,12 @@ export async function POST(request) {
 
     return new Response(stream, { headers: SSE_HEADERS });
   } catch (error) {
-    logError('Error generating code:', error);
+    const isBodyError = error?.code === 'BODY_INVALID' || error?.code === 'BODY_TOO_LARGE';
+    const message = isBodyError ? error.message : publicLlmError(error);
+    if (!isBodyError && error?.name !== 'AbortError') logError('Error generating code:', new Error(message));
     return NextResponse.json(
-      { error: error.message || 'Failed to generate code' },
-      { status: 500 }
+      { error: message },
+      { status: error?.code === 'BODY_TOO_LARGE' ? 413 : isBodyError ? 400 : error?.name === 'AbortError' ? 499 : 500 }
     );
   }
 }

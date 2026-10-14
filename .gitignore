@@ -12,6 +12,13 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/packages/mcp/dist/
+*.tgz
+/artifacts/
+__pycache__/
+*.py[cod]
 
 # next.js
 /.next/

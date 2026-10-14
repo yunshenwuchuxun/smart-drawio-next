@@ -1,0 +1,30 @@
+{
+  "name": "@yunshenwuchuxun/smart-drawio-mcp",
+  "version": "0.1.0",
+  "description": "Generate, validate, repair and style editable draw.io diagrams over MCP.",
+  "keywords": ["mcp", "model-context-protocol", "drawio", "diagrams", "architecture", "agent-skills"],
+  "homepage": "https://github.com/yunshenwuchuxun/smart-drawio-next/tree/tools-v0.1.0/packages/mcp",
+  "bugs": { "url": "https://github.com/yunshenwuchuxun/smart-drawio-next/issues" },
+  "type": "module",
+  "license": "MIT",
+  "mcpName": "io.github.yunshenwuchuxun/smart-drawio",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yunshenwuchuxun/smart-drawio-next.git",
+    "directory": "packages/mcp"
+  },
+  "bin": { "smart-drawio-mcp": "./dist/stdio.js" },
+  "exports": {
+    ".": "./dist/server.js",
+    "./core": "./dist/core.js"
+  },
+  "files": ["dist", "README.md", "LICENSE", "NOTICE", "server.json"],
+  "engines": { "node": ">=20.9" },
+  "publishConfig": { "access": "public" },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@xmldom/xmldom": "^0.9.12",
+    "saxes": "^6.0.0",
+    "zod": "^4.3.6"
+  }
+}
