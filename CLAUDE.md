@@ -115,7 +115,7 @@ Legacy keys (`smart-excalidraw-*`) are auto-migrated on first load via `ensureMi
 | Route | Method | Purpose |
 |-------|--------|---------|
 | `/api/generate` | POST | Main generation endpoint (SSE streaming), rate-limited |
-| `/api/models` | GET | List available models from configured provider |
+| `/api/models` | POST | List available models using provider credentials in the JSON body |
 | `/api/configs` | POST | Test LLM connection |
 
 The generate route uses `lib/rate-limiter.js` for IP-based throttling and `lib/generate-route-utils.js` for payload validation, vision model detection, and message assembly.
