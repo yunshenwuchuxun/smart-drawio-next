@@ -364,6 +364,7 @@ export async function testConnection(config) {
 export async function fetchModels(type, baseUrl, apiKey) {
   if (type === 'openai') {
     const response = await fetchWithBaseUrlFallback(baseUrl, '/models', {
+      cache: 'no-store',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
       },
@@ -384,6 +385,7 @@ export async function fetchModels(type, baseUrl, apiKey) {
   } else if (type === 'anthropic') {
     // Request actual models from provider like OpenAI, but with Anthropic headers
     const response = await fetchWithBaseUrlFallback(baseUrl, '/models', {
+      cache: 'no-store',
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',

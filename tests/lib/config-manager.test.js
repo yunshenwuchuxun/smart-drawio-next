@@ -113,8 +113,16 @@ describe('ConfigManager', () => {
     const result = await manager.fetchModels(BASE_CONFIG);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toContain('/api/models?');
-    expect(fetchMock.mock.calls[0][0]).toContain('type=openai');
+    expect(fetchMock).toHaveBeenCalledWith('/api/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        type: BASE_CONFIG.type,
+        baseUrl: BASE_CONFIG.baseUrl,
+        apiKey: BASE_CONFIG.apiKey,
+      }),
+    });
     expect(result).toEqual([{ id: 'gpt-4.1', name: 'gpt-4.1' }]);
   });
 });
